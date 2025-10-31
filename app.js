@@ -1,4 +1,4 @@
-
+const API_ORIGIN = location.origin;
 async function loadConfig(){ const r=await fetch('./data/products.json'); return r.json(); }
 const state={config:null,cart:[],lastQuote:null};
 const els={
