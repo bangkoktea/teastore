@@ -27,3 +27,185 @@
 .total{font-size:18px;font-weight:700}
 .footer{margin-top:16px;display:flex;gap:8px}
 .line{background:#06c755;color:#fff}
+/* =============== 5 O'CLOCK — Premium Shop Theme =============== */
+:root{
+  --bg:        #f7f5f1;            /* тёплый фон бумаги */
+  --panel:     #ffffff;            /* карточки/панели */
+  --ink:       #1b1b1b;            /* основной текст */
+  --muted:     #6b6b6b;            /* вторичный текст */
+  --brand:     #cdb278;            /* золото бренда */
+  --brand-ink: #7f6a39;            /* тёмное золото для текста */
+  --ring:      rgba(205,178,120,.35);
+  --shadow:    0 6px 18px rgba(0,0,0,.06);
+  --shadow-h:  0 10px 24px rgba(0,0,0,.10);
+}
+
+/* фон страницы */
+body{
+  background: radial-gradient(1200px 600px at 50% -10%, #fff, var(--bg));
+  color: var(--ink);
+}
+
+/* заголовок секции */
+#productGrid:before{
+  content:"Teas";
+  display:block;
+  font-family: "Playfair Display", serif;
+  font-weight: 700;
+  font-size: clamp(28px,3.4vw,40px);
+  letter-spacing:.02em;
+  margin: 20px 0 18px;
+  color: var(--ink);
+}
+
+/* грид товаров (адаптив) */
+#productGrid{
+  display:grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+}
+@media (max-width: 1279px){ #productGrid{ gap:18px; } }
+@media (max-width: 1023px){ #productGrid{ grid-template-columns: repeat(8,1fr);} }
+@media (max-width: 767px) { #productGrid{ grid-template-columns: repeat(6,1fr);} }
+@media (max-width: 479px) { #productGrid{ grid-template-columns: repeat(4,1fr);} }
+
+/* каждая карточка занимает колонки (xl/lg/md/sm) */
+#productGrid .card{
+  grid-column: span 4;            /* 3 в ряд на десктопе */
+}
+@media (max-width:1023px){ #productGrid .card{ grid-column: span 4; } } /* 2–3 в ряд */
+@media (max-width:767px) { #productGrid .card{ grid-column: span 6; } }   /* 2 в ряд */
+@media (max-width:479px){ #productGrid .card{ grid-column: span 4; } }    /* 1 в ряд */
+
+/* карточка */
+#productGrid .card{
+  background: var(--panel);
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display:flex; flex-direction:column;
+  transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
+}
+#productGrid .card:hover{
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-h);
+  border-color: var(--ring);
+}
+
+/* изображение */
+#productGrid .card img{
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #f9f6f0;
+  padding: 10px;
+  border: 1px solid rgba(201,178,125,.25);
+  box-shadow: 0 2px 6px rgba(0,0,0,.04);
+  transition: transform .25s ease;
+}
+#productGrid .card:hover img{ transform: scale(1.01); }
+
+/* название/описание */
+#productGrid .card h3{
+  margin: 12px 0 6px;
+  font-family: "Playfair Display", serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing:.01em;
+}
+#productGrid .card p{
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* селект размера */
+#productGrid .card .sizeSel{
+  -webkit-appearance:none; appearance:none;
+  border: 1px solid rgba(0,0,0,.12);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 14px;
+  background: #fff;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+#productGrid .card .sizeSel:focus{
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 4px rgba(205,178,120,.18);
+}
+
+/* кнопки */
+#productGrid .card .addBtn,
+#cartDrawer button,
+#checkoutBtn,
+#mobileCheckoutBtn{
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 700;
+  font-size: 14px;
+  background: #111;
+  color:#fff;
+  box-shadow: 0 6px 14px rgba(0,0,0,.15);
+  transition: transform .15s ease, box-shadow .2s ease, background .2s ease;
+}
+#productGrid .card .addBtn:hover,
+#checkoutBtn:hover,
+#mobileCheckoutBtn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(0,0,0,.18);
+}
+#productGrid .card .addBtn:disabled{ opacity:.5; cursor:not-allowed; }
+
+/* акценты золотом бренда */
+.logo, .price, .badge-preorder{ color: var(--brand-ink); }
+.badge-preorder{
+  display:inline-block; font-size:12px; font-weight:700;
+  padding:4px 10px; border-radius:999px;
+  background: linear-gradient(180deg, #efe5cf, #e5d3aa);
+  border: 1px solid rgba(195,168,110,.45);
+}
+
+/* правый сайдбар-корзина */
+#cartDrawer{
+  background: var(--panel);
+  border-left: 1px solid rgba(0,0,0,.08);
+  box-shadow: -8px 0 24px rgba(0,0,0,.08);
+}
+#cartDrawer .title{
+  font-family: "Playfair Display", serif;
+  font-weight: 700;
+  font-size: 20px;
+}
+#cartDrawer .meta, #cartDrawer .small{ color: var(--muted); }
+
+/* поля ввода в корзине */
+#cartDrawer input, #cartDrawer textarea{
+  border: 1px solid rgba(0,0,0,.12);
+  border-radius: 12px;
+  padding: 10px 12px;
+  transition:border-color .2s ease, box-shadow .2s ease;
+}
+#cartDrawer input:focus, #cartDrawer textarea:focus{
+  outline:none; border-color: var(--ring);
+  box-shadow: 0 0 0 4px rgba(205,178,120,.18);
+}
+
+/* итог/кнопка в корзине */
+#cartDrawer .total-label{ color: var(--muted); }
+#cartDrawer .total-sum{
+  font-family:"Playfair Display", serif;
+  font-size: 22px; font-weight: 700;
+}
+#cartDrawer .orderBtn{
+  background: linear-gradient(180deg, #1a1a1a, #000);
+  color:#fff;
+}
+
+/* мелкие корректировки */
+#productGrid .card .logo{ font-size: 16px; }
+#productGrid .card .mt-3{ margin-top:12px; }
