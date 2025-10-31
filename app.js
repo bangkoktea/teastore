@@ -111,7 +111,71 @@ function renderProducts(){ const cfg=state.config; cfg.items.forEach(p=>{ const 
     <button class="btn ${p.outOfStock?'btn-purple':'btn-primary'} add" data-id="${p.id}">${p.outOfStock?'Preorder':'Add to cart'}</button>
     ${p.outOfStock?'<span class="badge">ETA 7–10 days</span>':''}
   </div>`; els.grid.appendChild(el); }); }
+/* ===== CLIENT-ONLY DELIVERY ESTIMATOR (no servers, no keys) ===== */
+const DELIVERY = {
+  baseTHB: 30,        // базовая
+  perKmTHB: 12,       // за км
+  minTHB: 70,         // минимум
+  freeThreshold: 500, // бесплатная доставка от суммы корзины
+  maxKm: 25,          // максимум, дальше считаем как 25 км
+  avgSpeedKmph: 22    // средняя скорость курьера
+};
 
+// парсим координаты из текста/ссылки: "@13.75,100.50", "13.75, 100.50", или ...?q=13.75,100.50
+function parseLatLngFromText(text) {
+  const s = (text || "").trim();
+
+  let m = s.match(/@(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[3]) };
+
+  m = s.match(/\b(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)\b/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[3]) };
+
+  m = s.match(/[?&]q=(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[3]) };
+
+  return null;
+}
+
+// Haversine (км)
+function haversineKm(a, b) {
+  const toRad = d => d * Math.PI / 180;
+  const R = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const s1 = Math.sin(dLat/2) ** 2 +
+             Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) *
+             Math.sin(dLng/2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(s1), Math.sqrt(1 - s1));
+  return R * c;
+}
+
+// локальный расчёт «как у лаламув»
+async function estimateLocalCourier(pickup, dropoff, subtotalTHB=0) {
+  const kmRaw = haversineKm(pickup, dropoff);
+  const km = Math.min(kmRaw, DELIVERY.maxKm);
+
+  let price = DELIVERY.baseTHB + km * DELIVERY.perKmTHB;
+  price = Math.max(price, DELIVERY.minTHB);
+
+  if (subtotalTHB >= DELIVERY.freeThreshold) price = 0;
+
+  const travelMin = (km / DELIVERY.avgSpeedKmph) * 60;
+  const etaMin = Math.round(travelMin + 10); // +10 мин на сбор/подачу
+
+  window.state = window.state || {};
+  window.state.distanceKm  = kmRaw;
+  window.state.shippingTHB = price;
+  window.state.etaMin      = etaMin;
+
+  return { ok: true, priceTHB: Math.round(price), etaMin, distanceKm: kmRaw };
+}
+
+/* если в проекте не было estimateFromApi — делаем её обёрткой над локальным расчётом */
+function estimateFromApi(pickup, dropoff, subtotalTHB) {
+  return estimateLocalCourier(pickup, dropoff, subtotalTHB);
+}
+/* ===== /CLIENT-ONLY DELIVERY ESTIMATOR ===== */
 function updateCart(){ els.items.innerHTML=''; let subtotal=0; state.cart.forEach((it,idx)=>{ if(it.id!=='delivery') subtotal+=it.price*it.qty; const row=document.createElement('div'); row.className='row'; row.innerHTML=`
     <img src="${it.img}" alt="">
     <div style="flex:1"><div style="font-weight:600">${it.name}${it.variant?(' — '+it.variant):''}${it.preorder?'<span class="badge">PREORDER</span>':''}</div>
