@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>5 o’clock Tea — Shop</title>
+<link rel="stylesheet" href="./styles.css"/>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">5 O’CLOCK</div>
+    <button id="openCart" class="cart">Cart <span id="cartCount">0</span></button>
+  </div>
+
+  <div class="container">
+    <img src="./images/hero.jpg" alt="" style="width:100%;height:280px;object-fit:cover;border-radius:16px">
+    <h2 style="margin:16px 0 8px">Teas</h2>
+    <div id="productGrid" class="grid"></div>
+  </div>
+
+  <aside id="cartDrawer" class="drawer" aria-hidden="true">
+    <header>
+      <strong>Cart</strong>
+      <button id="closeCart">✕</button>
+    </header>
+    <div class="list" id="cartItems"></div>
+    <div class="summary">
+      <label class="small">Name</label>
+      <input id="custName" class="input" placeholder="Your name"/>
+      <label class="small">Phone (+66)</label>
+      <input id="custPhone" class="input" placeholder="+66 8x xxx xxxx"/>
+      <label class="small">Address (paste Google Maps link or text)</label>
+      <textarea id="address" class="input" rows="3" placeholder="e.g. Indy Ramkhamhaeng 2, Soi … or paste link with @lat,lng"></textarea>
+
+      <div style="display:flex;justify-content:space-between;margin-top:12px">
+        <div>Subtotal</div><div id="cartSubtotal">THB 0</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px">
+        <div>Delivery (estimate)</div><div id="shippingCost">THB 0</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px" class="total">
+        <div>Total</div><div id="cartTotal">THB 0</div>
+      </div>
+
+      <div class="footer">
+        <button id="checkoutBtn" class="btn line" disabled>Order via LINE</button>
+        <button id="closeCartBtn" class="btn">Close</button>
+      </div>
+      <div class="small" style="margin-top:6px">Preorder items: ETA 7–10 days.</div>
+    </div>
+  </aside>
+
+<script src="./app.js"></script>
+</body>
+</html>

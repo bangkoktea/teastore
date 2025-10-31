@@ -1,0 +1,119 @@
+{
+  "currency": "THB",
+  "freeShippingThreshold": 500,
+  "pickup": {
+    "lat": 13.6948,
+    "lng": 100.7186
+  },
+  "lineId": "@924uwcib",
+  "items": [
+    {
+      "id": "wild-cherry",
+      "name": "Wild Cherry",
+      "img": "./images/wild-cherry.jpg",
+      "options": [
+        {
+          "label": "50 g",
+          "price": 195
+        },
+        {
+          "label": "75 g",
+          "price": 250
+        }
+      ],
+      "desc": "Black tea with cherry notes — bright and aromatic."
+    },
+    {
+      "id": "taiga-blend",
+      "name": "Taiga Blend",
+      "img": "./images/taiga-blend.jpg",
+      "options": [
+        {
+          "label": "50 g",
+          "price": 195
+        },
+        {
+          "label": "75 g",
+          "price": 250
+        }
+      ],
+      "desc": "Black tea, berries & forest vibes. Cozy and bold."
+    },
+    {
+      "id": "rose-strawberry",
+      "name": "Rose Strawberry Fruit Tea",
+      "img": "./images/rose-strawberry.jpg",
+      "options": [
+        {
+          "label": "50 g",
+          "price": 195
+        },
+        {
+          "label": "75 g",
+          "price": 250
+        }
+      ],
+      "desc": "Black tea with apples, chokeberry, strawberry & rose petals."
+    },
+    {
+      "id": "rose-hibiscus",
+      "name": "Rose Hibiscus Fruit Tea",
+      "img": "./images/rose-hibiscus.jpg",
+      "options": [
+        {
+          "label": "50 g",
+          "price": 195
+        },
+        {
+          "label": "75 g",
+          "price": 250
+        }
+      ],
+      "desc": "Hibiscus, rose petals & berries for a ruby‑red infusion."
+    },
+    {
+      "id": "citrus-orange",
+      "name": "Citrus Orange Fruit Tea",
+      "img": "./images/citrus-orange.jpg",
+      "options": [
+        {
+          "label": "50 g",
+          "price": 195
+        },
+        {
+          "label": "75 g",
+          "price": 250
+        }
+      ],
+      "desc": "Sun‑dried oranges, apples & hibiscus for a refreshing citrus aroma."
+    },
+    {
+      "id": "strawberries-cream",
+      "name": "Strawberries & Cream",
+      "img": "./images/strawberries-cream.jpg",
+      "options": [
+        {
+          "label": "50 g",
+          "price": 195
+        },
+        {
+          "label": "75 g",
+          "price": 250
+        }
+      ],
+      "desc": "Black tea with strawberry pieces, goji berries & candied pineapple."
+    },
+    {
+      "id": "tea-sampler",
+      "name": "Tea Sampler (3×20g)",
+      "img": "./images/wild-cherry.jpg",
+      "options": [
+        {
+          "label": "Set",
+          "price": 195
+        }
+      ],
+      "desc": "Taiga + Strawberries & Cream + Wild Cherry (3×20g). Perfect to try."
+    }
+  ]
+}
