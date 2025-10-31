@@ -176,22 +176,71 @@ function estimateFromApi(pickup, dropoff, subtotalTHB) {
   return estimateLocalCourier(pickup, dropoff, subtotalTHB);
 }
 /* ===== /CLIENT-ONLY DELIVERY ESTIMATOR ===== */
-function updateCart(){ els.items.innerHTML=''; let subtotal=0; state.cart.forEach((it,idx)=>{ if(it.id!=='delivery') subtotal+=it.price*it.qty; const row=document.createElement('div'); row.className='row'; row.innerHTML=`
-    <img src="${it.img}" alt="">
-    <div style="flex:1"><div style="font-weight:600">${it.name}${it.variant?(' — '+it.variant):''}${it.preorder?'<span class="badge">PREORDER</span>':''}</div>
-    <div class="small">${fmtTHB(it.price)} × ${it.qty}</div></div>
-    ${it.id==='delivery'?'':`<div><button data-act="dec" data-idx="${idx}">−</button><button data-act="inc" data-idx="${idx}">+</button><button data-act="del" data-idx="${idx}">✕</button></div>`}`; els.items.appendChild(row); });
-  const coords=parseLatLngFromText(els.addr.value.trim()); state.lastQuote = coords? estimateLocal(state.config.pickup, coords) : null;
-  const shipping = state.lastQuote? state.lastQuote.priceTHB : (subtotal>=state.config.freeShippingThreshold?0:70);
-  const dIdx = state.cart.findIndex(x=>x.id==='delivery');
-  if (shipping>0){ const it={id:'delivery',name:'Delivery',variant:'Local courier (estimate)',price:shipping,qty:1,img:'./images/delivery.png'}; if(dIdx>-1) state.cart[dIdx]=it; else state.cart.push(it); }
-  else if(dIdx>-1){ state.cart.splice(dIdx,1); }
-  const total = state.cart.reduce((s,i)=>s+i.price*i.qty,0);
-  els.subtotal.textContent=fmtTHB(subtotal); els.shipping.textContent=fmtTHB(shipping); els.total.textContent=fmtTHB(total);
-  const items = state.cart.filter(i=>i.id!=='delivery').reduce((s,i)=>s+i.qty,0); els.count.textContent=items;
-  els.checkout.disabled = !(items>0 && els.name.value.trim() && els.phone.value.trim() && els.addr.value.trim());
-}
+function updateCart(){
+  els.items.innerHTML = '';
 
+  // считаем subtotal и рисуем строки корзины
+  let subtotal = 0;
+  state.cart.forEach((it, idx) => {
+    if (it.id !== 'delivery') subtotal += it.price * it.qty;
+
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
+      <img src="${it.img}" alt="">
+      <div style="flex:1">
+        <div style="font-weight:600">
+          ${it.name}${it.variant ? (' — ' + it.variant) : ''}${it.preorder ? '<span class="badge">PREORDER</span>' : ''}
+        </div>
+        <div class="small">${fmtTHB(it.price)} × ${it.qty}</div>
+      </div>
+      ${it.id === 'delivery' ? '' : `
+        <div>
+          <button data-act="dec" data-idx="${idx}">−</button>
+          <button data-act="inc" data-idx="${idx}">+</button>
+          <button data-act="del" data-idx="${idx}">✕</button>
+        </div>`}
+    `;
+    els.items.appendChild(row);
+  });
+
+  const coords = parseLatLngFromText(els.addr.value.trim());
+
+  const applyTotals = () => {
+    const shipping =
+      (state.lastQuote && state.lastQuote.ok && typeof state.lastQuote.priceTHB === 'number')
+        ? state.lastQuote.priceTHB
+        : (subtotal >= state.config.freeShippingThreshold ? 0 : DELIVERY.minTHB);
+
+    const dIdx = state.cart.findIndex(x => x.id === 'delivery');
+    if (shipping > 0) {
+      const eta = state.lastQuote?.etaMin ? `~${state.lastQuote.etaMin} min` : 'Local courier (estimate)';
+      const it = { id:'delivery', name:'Delivery', variant: eta, price: shipping, qty:1, img:'./images/delivery.png' };
+      if (dIdx > -1) state.cart[dIdx] = it; else state.cart.push(it);
+    } else if (dIdx > -1) {
+      state.cart.splice(dIdx, 1);
+    }
+
+    const total = state.cart.reduce((s, i) => s + i.price * i.qty, 0);
+    els.subtotal.textContent = fmtTHB(subtotal);
+    els.shipping.textContent = fmtTHB(shipping);
+    els.total.textContent = fmtTHB(total);
+
+    const items = state.cart.filter(i => i.id !== 'delivery').reduce((s, i) => s + i.qty, 0);
+    els.count.textContent = items;
+    els.checkout.disabled = !(items > 0 && els.name.value.trim() && els.phone.value.trim() && els.addr.value.trim());
+  };
+
+  if (coords) {
+    // важное отличие: используем нашу «обёртку» (работает без серверов)
+    estimateFromApi(state.config.pickup, coords, subtotal)
+      .then(q => { state.lastQuote = q; applyTotals(); })
+      .catch(() => { state.lastQuote = null; applyTotals(); });
+  } else {
+    state.lastQuote = null;
+    applyTotals();
+  }
+}
 function buildOrderText(){ const lines=state.cart.filter(i=>i.id!=='delivery').map(i=>`• ${i.name}${i.variant?` (${i.variant})`:''}${i.preorder?' [PREORDER]':''} x${i.qty} — THB ${i.price}`).join('\n');
   const subtotal=state.cart.filter(i=>i.id!=='delivery').reduce((s,i)=>s+i.price*i.qty,0);
   const delivery=state.cart.find(i=>i.id==='delivery')?.price||0; const total=state.cart.reduce((s,i)=>s+i.price*i.qty,0);
