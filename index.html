@@ -5,6 +5,111 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>5 o’clock Tea — Shop</title>
 <link rel="stylesheet" href="./styles.css"/>
+<!-- Шрифт и базовые переменные бренда -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand-text:#121212;
+    --brand-muted:#6b7280;
+    --brand-bg:#faf7f1;
+    --brand-card:#ffffff;
+    --brand-gold:#c9b27d;  /* 5 O’CLOCK золото */
+    --brand-line:#e5e7eb;
+    --radius-xl:18px;
+    --shadow-md:0 6px 24px rgba(0,0,0,.08);
+    --shadow-sm:0 3px 12px rgba(0,0,0,.06);
+  }
+
+  /* База страницы */
+  body{ background:var(--brand-bg); color:var(--brand-text); font-family:Inter,system-ui,Arial; }
+  .logo{ font-family:"Playfair Display",Georgia,serif; letter-spacing:.2px; color:#1b1b1b;}
+  .small{ font-size:.925rem; color:var(--brand-muted); }
+  .container{ max-width:1280px; margin:0 auto; padding:20px; }
+
+  /* Сетка страницы: контент + корзина */
+  .layout{
+    display:grid; grid-template-columns: 1fr 340px; gap:28px;
+    align-items:start;
+  }
+  @media (max-width: 1100px){ .layout{ grid-template-columns: 1fr; } }
+
+  /* Хиро */
+  .hero{
+    width:100%; max-height:320px; object-fit:cover;
+    border-radius:var(--radius-xl); box-shadow:var(--shadow-sm);
+  }
+
+  /* Сетка карточек */
+  #productGrid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap:18px 18px; margin-top:14px;
+  }
+
+  /* Карточка товара */
+  .card{
+    border-radius:var(--radius-xl);
+    background:var(--brand-card);
+    box-shadow:var(--shadow-sm);
+    transition:transform .18s ease, box-shadow .18s ease;
+    border:1px solid #eee;
+  }
+  .card:hover{ transform:translateY(-3px); box-shadow:var(--shadow-md); }
+  .card img{ aspect-ratio: 4/3; object-fit:cover; border-radius:14px; }
+  .card h3{ font-size:1.05rem; }
+  .card p{ color:#444; }
+
+  /* Кнопки */
+  .btn, .addBtn{
+    background:#111; color:#fff; border:none; cursor:pointer;
+    border-radius:999px; padding:.8rem 1rem; font-weight:600;
+    transition: transform .12s ease, box-shadow .12s ease, background .2s ease;
+    box-shadow: 0 2px 0 rgba(0,0,0,.15);
+  }
+  .btn:hover, .addBtn:hover{ transform: translateY(-1px); }
+  .btn:active, .addBtn:active{ transform: translateY(0); }
+
+  /* Вариант для предзаказа */
+  .addBtn.bg-purple-600{ background:var(--brand-gold)!important; color:#2b2313!important; }
+
+  /* Селект размера */
+  .sizeSel{
+    border:1px solid var(--brand-line); border-radius:999px;
+    padding:.55rem .8rem; background:#fff;
+  }
+
+  /* Корзина */
+  #cartPanel{
+    position:sticky; top:18px;
+    background:#fff; border:1px solid #eee;
+    border-radius:var(--radius-xl); padding:16px;
+    box-shadow:var(--shadow-sm);
+  }
+  #cartItems > div{ border-bottom:1px dashed #ebebeb; }
+  #cartItems > div:last-child{ border-bottom:none; }
+
+  /* Кнопка Order via LINE */
+  #checkoutBtn, #mobileCheckoutBtn{
+    background: var(--brand-gold); color:#1c1914; width:100%;
+  }
+  #checkoutBtn:disabled, #mobileCheckoutBtn:disabled{
+    opacity:.55; cursor:not-allowed; filter:grayscale(.1);
+  }
+
+  /* Инпуты */
+  .input, #custName, #custPhone, #address{
+    background:#fff; border:1px solid var(--brand-line);
+    border-radius:12px; padding:.75rem .9rem; outline:none;
+    width:100%; font-size:.95rem;
+  }
+  .input:focus, #custName:focus, #custPhone:focus, #address:focus{
+    border-color:var(--brand-gold); box-shadow:0 0 0 3px rgba(201,178,125,.22);
+  }
+
+  /* Шапка секции */
+  .section-title{ margin:16px 0 6px; font-size:1.35rem; }
+</style>
+
 </head>
 <body>
   <div class="header">
