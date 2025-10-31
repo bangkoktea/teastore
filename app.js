@@ -17,6 +17,83 @@ const els={
   name:document.getElementById('custName'),
   phone:document.getElementById('custPhone')
 };
+/* ===== CLIENT-ONLY DELIVERY ESTIMATOR (no APIs) ===== */
+/** Настройка «псевдо-Лаламув» */
+const DELIVERY = {
+  baseTHB: 30,         // базовая составляющая
+  perKmTHB: 12,        // стоимость за км
+  minTHB: 70,          // минимум
+  freeThreshold: 500,  // бесплатная доставка от суммы корзины
+  maxKm: 25,           // максимум, дальше считаем как 25км (или можно отказ)
+  avgSpeedKmph: 22     // средняя скорость курьера по городу
+};
+
+/** Парсинг координат из адресной строки:
+ *  - "@13.75,100.50"
+ *  - "13.75, 100.50"
+ *  - ссылка Google Maps с "…/@13.75,100.50" или с "…?q=13.75,100.50"
+ */
+function parseLatLngFromText(text) {
+  const s = (text || "").trim();
+
+  // 1) @lat,lng
+  let m = s.match(/@(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[3]) };
+
+  // 2) явные lat,lng
+  m = s.match(/\b(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)\b/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[3]) };
+
+  // 3) …?q=lat,lng
+  m = s.match(/[?&]q=(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[3]) };
+
+  return null;
+}
+
+/** Haversine расстояние в км */
+function haversineKm(a, b) {
+  const toRad = d => d * Math.PI / 180;
+  const R = 6371; // Земля, км
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const s1 = Math.sin(dLat/2) ** 2 +
+             Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) *
+             Math.sin(dLng/2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(s1), Math.sqrt(1 - s1));
+  return R * c;
+}
+
+/** Главный локальный расчёт */
+async function estimateLocalCourier(pickup, dropoff, subtotalTHB=0) {
+  const kmRaw = haversineKm(pickup, dropoff);
+  const km = Math.min(kmRaw, DELIVERY.maxKm);
+
+  // цена
+  let price = DELIVERY.baseTHB + km * DELIVERY.perKmTHB;
+  price = Math.max(price, DELIVERY.minTHB);
+
+  // доставка бесплатна, если превысили порог
+  if (subtotalTHB >= DELIVERY.freeThreshold) price = 0;
+
+  // ETA
+  const travelMin = (km / DELIVERY.avgSpeedKmph) * 60;
+  const etaMin = Math.round(travelMin + 10); // +10 минут на сбор/подачу
+
+  // сохраним немного в window.state — пригодится в сообщении для LINE
+  window.state = window.state || {};
+  window.state.distanceKm  = kmRaw;
+  window.state.shippingTHB = price;
+  window.state.etaMin      = etaMin;
+
+  return {
+    ok: true,
+    priceTHB: Math.round(price),
+    etaMin,
+    distanceKm: kmRaw
+  };
+}
+/* ===== /CLIENT-ONLY DELIVERY ESTIMATOR ===== */
 function fmtTHB(v){ return 'THB '+Number(v).toLocaleString('en-US'); }
 
 function haversineKm(a,b){ const R=6371,toRad=x=>x*Math.PI/180; const dLat=toRad(b.lat-a.lat), dLng=toRad(b.lng-a.lng); const la1=toRad(a.lat), la2=toRad(b.lat); const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
