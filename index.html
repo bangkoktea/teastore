@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>5 O’CLOCK — Tea Boutique</title>
+  <link rel="stylesheet" href="./styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="site-head">
+    <div class="brand">5 O’CLOCK</div>
+    <button id="openCart" class="cart-btn">Cart <span id="cartCount">0</span></button>
+  </header>
+
+  <main class="container">
+    <img class="hero" src="./images/hero.jpg" alt="Tea Boutique hero"/>
+
+    <h2 class="h2">Teas</h2>
+    <div id="productGrid" class="grid"></div>
+  </main>
+
+  <!-- Cart drawer -->
+  <aside id="cartDrawer" class="drawer" aria-hidden="true">
+    <header class="drawer-head">
+      <strong>Cart</strong>
+      <button id="closeCart" class="x">✕</button>
+    </header>
+
+    <div id="cartItems" class="cart-list"></div>
+
+    <div class="cart-form">
+      <label class="lbl">Name</label>
+      <input id="custName" class="input" placeholder="Your name"/>
+
+      <label class="lbl">Phone (+66)</label>
+      <input id="custPhone" class="input" placeholder="+66 8x xxx xxxx"/>
+
+      <label class="lbl">District / Area</label>
+      <select id="district" class="input">
+        <option value="">Select…</option>
+        <option value="RAMKHAM">Ramkhamhaeng / Bang Kapi / Hua Mak</option>
+        <option value="LADPHRAO">Ladprao / Lat Krabang / On Nut / Suan Luang</option>
+        <option value="SUKHUMVIT">Sukhumvit (Asoke–Phra Khanong)</option>
+        <option value="SILOM">Bang Rak / Silom / Sathorn</option>
+        <option value="BANGNA">Bang Na (incl. 10260–10270)</option>
+        <option value="SAMUTPRAKAN">Samut Prakan</option>
+        <option value="NONTHABURI">Nonthaburi</option>
+        <option value="PATHUM">Rangsit / Pathum Thani</option>
+      </select>
+
+      <label class="lbl">Full address (free text or Google Maps link)</label>
+      <textarea id="address" class="input" rows="3" placeholder="Street, building, soi, ZIP…"></textarea>
+
+      <div class="row">
+        <span>Subtotal</span><span id="cartSubtotal">THB 0</span>
+      </div>
+      <div class="row">
+        <span>Delivery (by district)</span><span id="shippingCost">THB 0</span>
+      </div>
+      <div class="row total">
+        <span>Total</span><span id="cartTotal">THB 0</span>
+      </div>
+
+      <button id="checkoutLine" class="btn gold" type="button" disabled>Order via LINE</button>
+      <button id="checkoutMail" class="btn" type="button" disabled>Order via e-mail</button>
+      <button id="closeCartBtn" class="btn light" type="button">Close</button>
+
+      <p class="note">Preorder items: ETA 7–10 days.</p>
+    </div>
+  </aside>
+
+  <script src="./app.js"></script>
+</body>
+</html>
