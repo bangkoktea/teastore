@@ -1,187 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>5 o’clock Tea — Shop</title>
-<link rel="stylesheet" href="./styles.css"/>
-<!-- Шрифт и базовые переменные бренда -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --brand-text:#121212;
-    --brand-muted:#6b7280;
-    --brand-bg:#faf7f1;
-    --brand-card:#ffffff;
-    --brand-gold:#c9b27d;  /* 5 O’CLOCK золото */
-    --brand-line:#e5e7eb;
-    --radius-xl:18px;
-    --shadow-md:0 6px 24px rgba(0,0,0,.08);
-    --shadow-sm:0 3px 12px rgba(0,0,0,.06);
-  }
-
-  /* База страницы */
-  body{ background:var(--brand-bg); color:var(--brand-text); font-family:Inter,system-ui,Arial; }
-  .logo{ font-family:"Playfair Display",Georgia,serif; letter-spacing:.2px; color:#1b1b1b;}
-  .small{ font-size:.925rem; color:var(--brand-muted); }
-  .container{ max-width:1280px; margin:0 auto; padding:20px; }
-
-  /* Сетка страницы: контент + корзина */
-  .layout{
-    display:grid; grid-template-columns: 1fr 340px; gap:28px;
-    align-items:start;
-  }
-  @media (max-width: 1100px){ .layout{ grid-template-columns: 1fr; } }
-
-  /* Хиро */
-  .hero{
-    width:100%; max-height:320px; object-fit:cover;
-    border-radius:var(--radius-xl); box-shadow:var(--shadow-sm);
-  }
-
-  /* Сетка карточек */
-  #productGrid{
-    display:grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap:18px 18px; margin-top:14px;
-  }
-
-  /* Карточка товара */
-  .card{
-    border-radius:var(--radius-xl);
-    background:var(--brand-card);
-    box-shadow:var(--shadow-sm);
-    transition:transform .18s ease, box-shadow .18s ease;
-    border:1px solid #eee;
-  }
-  .card:hover{ transform:translateY(-3px); box-shadow:var(--shadow-md); }
-  .card img{ aspect-ratio: 4/3; object-fit:cover; border-radius:14px; }
-  .card h3{ font-size:1.05rem; }
-  .card p{ color:#444; }
-
-  /* Кнопки */
-  .btn, .addBtn{
-    background:#111; color:#fff; border:none; cursor:pointer;
-    border-radius:999px; padding:.8rem 1rem; font-weight:600;
-    transition: transform .12s ease, box-shadow .12s ease, background .2s ease;
-    box-shadow: 0 2px 0 rgba(0,0,0,.15);
-  }
-  .btn:hover, .addBtn:hover{ transform: translateY(-1px); }
-  .btn:active, .addBtn:active{ transform: translateY(0); }
-
-  /* Вариант для предзаказа */
-  .addBtn.bg-purple-600{ background:var(--brand-gold)!important; color:#2b2313!important; }
-
-  /* Селект размера */
-  .sizeSel{
-    border:1px solid var(--brand-line); border-radius:999px;
-    padding:.55rem .8rem; background:#fff;
-  }
-
-  /* Корзина */
-  #cartPanel{
-    position:sticky; top:18px;
-    background:#fff; border:1px solid #eee;
-    border-radius:var(--radius-xl); padding:16px;
-    box-shadow:var(--shadow-sm);
-  }
-  #cartItems > div{ border-bottom:1px dashed #ebebeb; }
-  #cartItems > div:last-child{ border-bottom:none; }
-
-  /* Кнопка Order via LINE */
-  #checkoutBtn, #mobileCheckoutBtn{
-    background: var(--brand-gold); color:#1c1914; width:100%;
-  }
-  #checkoutBtn:disabled, #mobileCheckoutBtn:disabled{
-    opacity:.55; cursor:not-allowed; filter:grayscale(.1);
-  }
-
-  /* Инпуты */
-  .input, #custName, #custPhone, #address{
-    background:#fff; border:1px solid var(--brand-line);
-    border-radius:12px; padding:.75rem .9rem; outline:none;
-    width:100%; font-size:.95rem;
-  }
-  .input:focus, #custName:focus, #custPhone:focus, #address:focus{
-    border-color:var(--brand-gold); box-shadow:0 0 0 3px rgba(201,178,125,.22);
-  }
-
-  /* Шапка секции */
-  .section-title{ margin:16px 0 6px; font-size:1.35rem; }
-</style>
-
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>5 o’clock Tea — Shop</title>
+  <link rel="stylesheet" href="./styles.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --brand-text:#121212; --brand-muted:#6b7280; --brand-bg:#faf7f1; --brand-card:#ffffff;
+      --brand-gold:#c9b27d; --brand-line:#e5e7eb; --radius-xl:18px;
+      --shadow-md:0 6px 24px rgba(0,0,0,.08); --shadow-sm:0 3px 12px rgba(0,0,0,.06);
+    }
+    body{ background:var(--brand-bg); color:var(--brand-text); font-family:Inter,system-ui,Arial; }
+    .logo{ font-family:"Playfair Display",Georgia,serif; letter-spacing:.2px; color:#1b1b1b;}
+    .small{ font-size:.925rem; color:var(--brand-muted); }
+    .hero{ width:100%; max-height:320px; object-fit:cover; border-radius:var(--radius-xl); box-shadow:var(--shadow-sm); }
+    #productGrid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:18px; margin-top:14px; }
+    .card{ border-radius:var(--radius-xl); background:var(--brand-card); box-shadow:var(--shadow-sm); transition:transform .18s ease, box-shadow .18s ease; border:1px solid #eee; }
+    .card:hover{ transform:translateY(-3px); box-shadow:var(--shadow-md); }
+    .card img{ aspect-ratio: 4/3; object-fit:cover; border-radius:14px; }
+    .btn,.addBtn{ background:#111; color:#fff; border:none; cursor:pointer; border-radius:999px; padding:.8rem 1rem; font-weight:600; transition:.12s; box-shadow:0 2px 0 rgba(0,0,0,.15); }
+    .btn:hover,.addBtn:hover{ transform:translateY(-1px) }
+    .btn:active,.addBtn:active{ transform:translateY(0) }
+    .addBtn.bg-purple-600{ background:var(--brand-gold)!important; color:#2b2313!important; }
+    .sizeSel{ border:1px solid var(--brand-line); border-radius:999px; padding:.55rem .8rem; background:#fff; }
+    #checkoutBtn,#mobileCheckoutBtn{ background:var(--brand-gold); color:#1c1914; width:100%; }
+    #checkoutBtn:disabled,#mobileCheckoutBtn:disabled{ opacity:.55; cursor:not-allowed; filter:grayscale(.1); }
+    .input,#custName,#custPhone,#address{ background:#fff; border:1px solid var(--brand-line); border-radius:12px; padding:.75rem .9rem; outline:none; width:100%; font-size:.95rem; }
+    .input:focus,#custName:focus,#custPhone:focus,#address:focus{ border-color:var(--brand-gold); box-shadow:0 0 0 3px rgba(201,178,125,.22); }
+  </style>
 </head>
 <body>
-  <div class="header">
+  <div class="header" style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;">
     <div class="logo">5 O’CLOCK</div>
     <button id="openCart" class="cart">Cart <span id="cartCount">0</span></button>
   </div>
 
-<main style="display:flex;justify-content:center;align-items:flex-start;gap:24px;max-width:1280px;margin:0 auto;padding:20px;flex-wrap:wrap">
-  
-  <!-- Левая часть: магазин -->
-  <div class="shop" style="flex:1;min-width:300px;max-width:850px">
-    <img src="./images/hero.jpg" alt="" style="width:100%;border-radius:18px;margin-bottom:16px;object-fit:cover;max-height:300px"/>
-    <h2 class="logo" style="margin:14px 0 8px 0;">Teas</h2>
-    <div id="productGrid" class="grid"></div>
-  </div>
-</main>
+  <main style="display:flex;justify-content:center;align-items:flex-start;gap:24px;max-width:1280px;margin:0 auto;padding:20px;flex-wrap:wrap">
+    <div class="shop" style="flex:1;min-width:300px;max-width:850px">
+      <img src="./images/hero.jpg" alt="" class="hero"/>
+      <h2 class="logo" style="margin:14px 0 8px 0;">Teas</h2>
+      <div id="productGrid" class="grid"></div>
+    </div>
+  </main>
 
-
+  <!-- Cart drawer -->
   <aside id="cartDrawer" class="drawer" aria-hidden="true">
-    <header>
+    <header style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 0;">
       <strong>Cart</strong>
-      <button id="closeCart">✕</button>
+      <button id="closeCart" type="button">✕</button>
     </header>
-    <div class="list" id="cartItems"></div>
-    <div class="summary">
+
+    <div id="cartItems" class="list"></div>
+
+    <div class="summary" style="margin-top:12px">
       <label class="small">Name</label>
       <input id="custName" class="input" placeholder="Your name"/>
+
       <label class="small">Phone (+66)</label>
       <input id="custPhone" class="input" placeholder="+66 8x xxx xxxx"/>
-<div class="summary">
-  <label class="small">Name</label>
-  <input id="custName" class="input" placeholder="Your name"/>
 
-  <label class="small">Phone (+66)</label>
-  <input id="custPhone" class="input" placeholder="+66 8x xxx xxxx"/>
+      <label class="small">District / Area</label>
+      <select id="district" class="input">
+        <option value="">Select…</option>
+        <option data-km="3">Ramkhamhaeng / Bang Kapi / Hua Mak (~3 km)</option>
+        <option data-km="8">Ladprao / Lat Krabang / On Nut / Suan Luang (~8 km)</option>
+        <option data-km="15">Sukhumvit (Asoke–Phra Khanong) (~15 km)</option>
+        <option data-km="18">Bang Rak / Silom / Sathorn (~18 km)</option>
+        <option data-km="21">Bang Na (incl. 10260–10270) (~21 km)</option>
+        <option data-km="21">Samut Prakan (~21 km)</option>
+        <option data-km="23">Nonthaburi (~23 km)</option>
+        <option data-km="28">Rangsit / Pathum Thani (~28 km)</option>
+      </select>
 
-  <label class="small">District / Area</label>
-  <select id="district" class="input">
-    <option value="">Select…</option>
-    <option data-km="3">Ramkhamhaeng / Bang Kapi / Hua Mak (~3 km)</option>
-    <option data-km="8">Ladprao / Lat Krabang / On Nut / Suan Luang (~8 km)</option>
-    <option data-km="15">Sukhumvit (Asoke–Phra Khanong) (~15 km)</option>
-    <option data-km="18">Bang Rak / Silom / Sathorn (~18 km)</option>
-    <option data-km="21">Bang Na (incl. 10260–10270) (~21 km)</option>
-    <option data-km="21">Samut Prakan (~21 km)</option>
-    <option data-km="23">Nonthaburi (~23 km)</option>
-    <option data-km="28">Rangsit / Pathum Thani (~28 km)</option>
-  </select>
+      <label class="small" for="address">Full address (free text or Google Maps link)</label>
+      <textarea id="address" class="input" rows="3"
+        placeholder="e.g. Indy Ramkhamhaeng 2, Soi … or paste link with @lat,lng"></textarea>
 
-  <label class="small" for="address">Full address (free text or Google Maps link)</label>
-  <textarea id="address" class="input" rows="3"
-            placeholder="e.g. Indy Ramkhamkhaeng 2, Soi … or paste link with @lat,lng"></textarea>
+      <div style="display:flex;justify-content:space-between;margin-top:12px">
+        <div>Subtotal</div><div id="cartSubtotal">THB 0</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px">
+        <div>Delivery (estimate)</div><div id="shippingCost">THB 0</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px" class="total">
+        <div>Total</div><div id="cartTotal">THB 0</div>
+      </div>
 
-  <div style="display:flex;justify-content:space-between;margin-top:12px">
-    <div>Subtotal</div><div id="cartSubtotal">THB 0</div>
-  </div>
-  <div style="display:flex;justify-content:space-between;margin-top:4px">
-    <div>Delivery (estimate)</div><div id="shippingCost">THB 0</div>
-  </div>
-  <div style="display:flex;justify-content:space-between;margin-top:8px" class="total">
-    <div>Total</div><div id="cartTotal">THB 0</div>
-  </div>
-
-  <div class="footer">
-    <button id="checkoutBtn" class="btn line" type="button" disabled>Order via LINE</button>
-    <button id="closeCartBtn" class="btn" type="button">Close</button>
-  </div>
-  <div class="small" style="margin-top:6px">Preorder items: ETA 7–10 days.</div>
-</div>
-
+      <div class="footer" style="display:flex;gap:8px;margin-top:12px;">
+        <button id="checkoutBtn" class="btn line" type="button" disabled>Order via LINE</button>
+        <button id="closeCartBtn" class="btn" type="button">Close</button>
+      </div>
+      <div class="small" style="margin-top:6px">Preorder items: ETA 7–10 days.</div>
+    </div>
   </aside>
 
-<script src="./app.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
