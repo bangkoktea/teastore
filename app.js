@@ -20,7 +20,7 @@ const els = {
 };
 
 const SHIP_BY_DISTRICT = {
-  RAMKHAM: 70,
+  RAMKHAM: 70, 
   LADPHRAO: 110,
   SUKHUMVIT: 140,
   SILOM: 150,
