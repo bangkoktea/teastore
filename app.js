@@ -1,4 +1,4 @@
-// app.js (clean)
+// app.js (clean, fixed)
 
 // ---- config / state / refs ----
 const API_ORIGIN = location.origin;
@@ -25,12 +25,11 @@ const els = {
   addr:      document.getElementById('address'),
   name:      document.getElementById('custName'),
   phone:     document.getElementById('custPhone'),
+  district:  document.getElementById('district'), // NEW
 };
 
 // ---- utils ----
-function fmtTHB(v) {
-  return 'THB ' + Number(v).toLocaleString('en-US');
-}
+function fmtTHB(v) { return 'THB ' + Number(v).toLocaleString('en-US'); }
 
 // ---- CLIENT-ONLY DELIVERY ESTIMATOR (no servers, no keys) ----
 const DELIVERY = {
@@ -38,11 +37,22 @@ const DELIVERY = {
   perKmTHB: 12,       // за км
   minTHB: 70,         // минимум
   freeThreshold: 500, // бесплатная доставка от суммы корзины
-  maxKm: 25,          // максимум для расчёта
-  avgSpeedKmph: 22,   // средняя скорость курьера
+  maxKm: 25           // максимум для расчёта
 };
 
-// Haversine (км)
+// ===== AREAS (dropdown) =====
+const DISTRICTS = {
+  RAMKHAM:     { label: "Ramkhamhaeng / Bang Kapi / Hua Mak", km: 3 },
+  LADPHRAO:    { label: "Ladprao / Lat Krabang / On Nut / Suan Luang", km: 8 },
+  SUKHUMVIT:   { label: "Sukhumvit (Asoke–Phra Khanong)", km: 15 },
+  SILOM:       { label: "Bang Rak / Silom / Sathorn", km: 18 },
+  BANGNA:      { label: "Bang Na (incl. 10260–10270)", km: 21 }, // 21 км ≈ ~160฿
+  SAMUTPRAKAN: { label: "Samut Prakan", km: 21 },
+  NONTHABURI:  { label: "Nonthaburi", km: 23 },
+  PATHUM:      { label: "Rangsit / Pathum Thani", km: 28 },
+};
+
+// Haversine (км) — если пользователь вставил координаты/ссылку
 function haversineKm(a, b) {
   const toRad = d => d * Math.PI / 180;
   const R = 6371;
@@ -58,46 +68,73 @@ function haversineKm(a, b) {
 // Парсим координаты из строки/ссылки
 function parseLatLngFromText(text) {
   const s = (text || '').trim();
-
-  // @lat,lng
   let m = s.match(/@(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)/);
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[3]) };
-
-  // lat,lng
   m = s.match(/\b(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)\b/);
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[3]) };
-
-  // ?q=lat,lng
   m = s.match(/[?&]q=(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)/);
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[3]) };
+  return null;
+}
+
+// Вычисляем км по селекту или тексту адреса (ZIP/координаты)
+function getKmFromDistrictOrText() {
+  const code = (els.district?.value || '').trim();
+  if (code && DISTRICTS[code]) return DISTRICTS[code].km;
+
+  // попытка по ZIP
+  const t = (els.addr?.value || '').toLowerCase();
+  const zipMatch = t.match(/\b\d{5}\b/);
+  if (zipMatch) {
+    const zip = zipMatch[0];
+    if (/^1026\d|1027\d$/.test(zip)) return 21; // Bang Na / Samut Prakan
+    if (/^1011\d$/.test(zip))       return 15; // Sukhumvit core
+    if (/^1050\d$/.test(zip))       return 18; // Silom/Sathon
+    if (/^110\d\d$/.test(zip))      return 23; // Nonthaburi
+    if (/^120\d\d$/.test(zip))      return 28; // Pathum Thani
+    if (/^1024\d$/.test(zip))       return 3;  // Ramkhamhaeng area
+    if (/^1025\d$/.test(zip))       return 8;  // Ladprao / On Nut etc
+  }
+
+  // попытка по координатам: считаем от точки магазина (state.config.pickup)
+  const coords = parseLatLngFromText(els.addr?.value || '');
+  if (coords && state?.config?.pickup) {
+    const km = haversineKm(state.config.pickup, coords);
+    return Math.round(km * 10) / 10;
+  }
 
   return null;
 }
 
-// Локальный «как у лаламув»
-async function estimateLocalCourier(pickup, dropoff, subtotalTHB = 0) {
-  const kmRaw = haversineKm(pickup, dropoff);
-  const km = Math.min(kmRaw, DELIVERY.maxKm);
+// Обёртка, которую вызывает корзина (локальная логика, без ETA)
+function estimateFromApi(_pickupIgnored, _dropoffIgnored, subtotalTHB = 0) {
+  const freeThreshold = (state.config?.freeShippingThreshold ?? DELIVERY.freeThreshold);
+  const kmDetected = getKmFromDistrictOrText();
 
-  let price = DELIVERY.baseTHB + km * DELIVERY.perKmTHB;
-  price = Math.max(price, DELIVERY.minTHB);
-  if (subtotalTHB >= DELIVERY.freeThreshold) price = 0;
+  if (subtotalTHB >= freeThreshold) {
+    window.state = window.state || {};
+    window.state.shippingTHB = 0;
+    window.state.distanceKm  = kmDetected ?? 0;
+    return { ok:true, priceTHB:0, distanceKm:(kmDetected ?? 0) };
+  }
 
-  const travelMin = (km / DELIVERY.avgSpeedKmph) * 60;
-  const etaMin = Math.round(travelMin + 10); // +10 мин на сбор/подачу
+  if (kmDetected == null) {
+    window.state = window.state || {};
+    window.state.shippingTHB = DELIVERY.minTHB;
+    window.state.distanceKm  = 0;
+    return { ok:false, priceTHB:DELIVERY.minTHB, distanceKm:0 };
+  }
 
-  // удобно иметь в window.state для сообщения
+  const km = Math.min(kmDetected, DELIVERY.maxKm);
+  let price = DELIVERY.baseTHB + DELIVERY.perKmTHB * km;
+  if (price < DELIVERY.minTHB) price = DELIVERY.minTHB;
+  price = Math.round(price / 5) * 5; // округлим до 5฿
+
   window.state = window.state || {};
-  window.state.distanceKm  = kmRaw;
   window.state.shippingTHB = price;
-  window.state.etaMin      = etaMin;
+  window.state.distanceKm  = km;
 
-  return { ok: true, priceTHB: Math.round(price), etaMin, distanceKm: kmRaw };
-}
-
-// Обёртка, которую вызывает корзина (сейчас локальная логика)
-function estimateFromApi(pickup, dropoff, subtotalTHB) {
-  return estimateLocalCourier(pickup, dropoff, subtotalTHB);
+  return { ok:true, priceTHB:price, distanceKm:km };
 }
 // ---- /CLIENT-ONLY DELIVERY ESTIMATOR ----
 
@@ -157,19 +194,17 @@ function updateCart() {
     els.items.appendChild(row);
   });
 
-  const coords = parseLatLngFromText(els.addr.value.trim());
-
   const applyTotals = () => {
     const shipping =
       (state.lastQuote && state.lastQuote.ok && typeof state.lastQuote.priceTHB === 'number')
         ? state.lastQuote.priceTHB
-        : (subtotal >= state.config.freeShippingThreshold ? 0 : DELIVERY.minTHB);
+        : (subtotal >= (state.config?.freeShippingThreshold ?? DELIVERY.freeThreshold) ? 0 : DELIVERY.minTHB);
 
     // обновим/вставим позицию Delivery
     const dIdx = state.cart.findIndex(x => x.id === 'delivery');
     if (shipping > 0) {
-      const eta = state.lastQuote?.etaMin ? `~${state.lastQuote.etaMin} min` : 'Local courier (estimate)';
-      const it = { id: 'delivery', name: 'Delivery', variant: eta, price: shipping, qty: 1, img: './images/delivery.png' };
+      const km = (typeof state.lastQuote?.distanceKm === 'number') ? `~${state.lastQuote.distanceKm} km` : 'Selected area';
+      const it = { id: 'delivery', name: 'Delivery', variant: km, price: shipping, qty: 1, img: './images/delivery.png' };
       if (dIdx > -1) state.cart[dIdx] = it; else state.cart.push(it);
     } else if (dIdx > -1) {
       state.cart.splice(dIdx, 1);
@@ -186,14 +221,10 @@ function updateCart() {
     els.checkout.disabled = !(items > 0 && els.name.value.trim() && els.phone.value.trim() && els.addr.value.trim());
   };
 
-  if (coords) {
-    estimateFromApi(state.config.pickup, coords, subtotal)
-      .then(q => { state.lastQuote = q; applyTotals(); })
-      .catch(() => { state.lastQuote = null; applyTotals(); });
-  } else {
-    state.lastQuote = null;
-    applyTotals();
-  }
+  // ВСЕГДА считаем локально (без координат/сетевых вызовов)
+  estimateFromApi(null, null, subtotal)
+    .then(q => { state.lastQuote = q; applyTotals(); })
+    .catch(() => { state.lastQuote = null; applyTotals(); });
 }
 
 // ---- LINE message ----
@@ -208,7 +239,7 @@ function buildOrderText() {
   const total    = state.cart.reduce((s, i) => s + i.price * i.qty, 0);
 
   const dist = (state.lastQuote && typeof state.lastQuote.distanceKm === 'number')
-    ? `\nDistance approx: ${state.lastQuote.distanceKm.toFixed(1)} km, ETA ~${state.lastQuote.etaMin} min`
+    ? `\nDistance approx: ${state.lastQuote.distanceKm.toFixed(1)} km`
     : '';
 
   return `Order from 5 o'clock Tea
@@ -269,7 +300,8 @@ document.addEventListener('click', (e) => {
   }
 });
 
-['input','change','blur'].forEach(ev => els.addr.addEventListener(ev, updateCart));
+['input','change','blur'].forEach(ev => els.addr?.addEventListener(ev, updateCart));
+['change'].forEach(ev => els.district?.addEventListener(ev, updateCart)); // NEW
 ['input','change','blur'].forEach(ev => els.name.addEventListener(ev, updateCart));
 ['input','change','blur'].forEach(ev => els.phone.addEventListener(ev, updateCart));
 
