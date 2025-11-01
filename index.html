@@ -8,66 +8,62 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <header class="site-head">
-    <div class="brand">5 O’CLOCK</div>
-    <button id="openCart" class="cart-btn">Cart <span id="cartCount">0</span></button>
+  <header class="topbar container">
+    <div class="brand">
+      <img src="./images/logo-5oclock.png" alt="5 O'CLOCK" class="logo">
+      <span class="brand-name">5 O’CLOCK</span>
+    </div>
+    <button id="openCart" class="cart-btn">
+      Cart <span id="cartCount">0</span>
+    </button>
   </header>
 
   <main class="container">
-    <img class="hero" src="./images/hero.jpg" alt="Tea Boutique hero"/>
-
+    <img src="./images/hero.jpg" class="hero" alt="Tea hero"/>
     <h2 class="h2">Teas</h2>
     <div id="productGrid" class="grid"></div>
   </main>
 
-  <!-- Cart drawer -->
+  <!-- Drawer Cart -->
   <aside id="cartDrawer" class="drawer" aria-hidden="true">
     <header class="drawer-head">
       <strong>Cart</strong>
-      <button id="closeCart" class="x">✕</button>
+      <button id="closeCart" class="icon-btn">✕</button>
     </header>
 
     <div id="cartItems" class="cart-list"></div>
 
-    <div class="cart-form">
+    <section class="checkout">
       <label class="lbl">Name</label>
       <input id="custName" class="input" placeholder="Your name"/>
 
       <label class="lbl">Phone (+66)</label>
       <input id="custPhone" class="input" placeholder="+66 8x xxx xxxx"/>
 
-      <label class="lbl">District / Area</label>
-      <select id="district" class="input">
-        <option value="">Select…</option>
-        <option value="RAMKHAM">Ramkhamhaeng / Bang Kapi / Hua Mak</option>
-        <option value="LADPHRAO">Ladprao / Lat Krabang / On Nut / Suan Luang</option>
-        <option value="SUKHUMVIT">Sukhumvit (Asoke–Phra Khanong)</option>
-        <option value="SILOM">Bang Rak / Silom / Sathorn</option>
-        <option value="BANGNA">Bang Na (incl. 10260–10270)</option>
-        <option value="SAMUTPRAKAN">Samut Prakan</option>
-        <option value="NONTHABURI">Nonthaburi</option>
-        <option value="PATHUM">Rangsit / Pathum Thani</option>
-      </select>
+      <label class="lbl">District / Area (Bangkok)</label>
+      <select id="district" class="input"></select>
 
       <label class="lbl">Full address (free text or Google Maps link)</label>
-      <textarea id="address" class="input" rows="3" placeholder="Street, building, soi, ZIP…"></textarea>
+      <textarea id="address" class="input" rows="3" placeholder="Street, building, soi, floor… or paste Google Maps link (@lat,lng)"></textarea>
 
       <div class="row">
         <span>Subtotal</span><span id="cartSubtotal">THB 0</span>
       </div>
       <div class="row">
-        <span>Delivery (by district)</span><span id="shippingCost">THB 0</span>
+        <span>Delivery (estimate)</span><span id="shippingCost">THB 0</span>
       </div>
       <div class="row total">
         <span>Total</span><span id="cartTotal">THB 0</span>
       </div>
 
-      <button id="checkoutLine" class="btn gold" type="button" disabled>Order via LINE</button>
-      <button id="checkoutMail" class="btn" type="button" disabled>Order via e-mail</button>
-      <button id="closeCartBtn" class="btn light" type="button">Close</button>
-
-      <p class="note">Preorder items: ETA 7–10 days.</p>
-    </div>
+      <div class="actions">
+        <button id="checkoutBtn" class="btn primary" disabled>Order via LINE</button>
+        <a id="emailBtn" class="btn" href="#" role="button">Order via Email</a>
+        <button id="closeCartBtn" class="btn light">Close</button>
+      </div>
+      <p class="tiny">Preorder items: ETA 7–10 days.</p>
+      <p class="tiny">LINE: <b>@924uwcib</b> &nbsp;•&nbsp; Email: <a href="mailto:5oclock@gmail.com">5oclock@gmail.com</a></p>
+    </section>
   </aside>
 
   <script src="./app.js"></script>
