@@ -1,15 +1,5 @@
-// app.js (clean, fixed)
-
-// ---- config / state / refs ----
-const API_ORIGIN = location.origin;
-
-async function loadConfig() {
-  const r = await fetch('./data/products.json');
-  return r.json();
-}
-
-const state = { config: null, cart: [], lastQuote: null };
-
+// ---- config / state ----
+const state = { cfg: null, cart: [] };
 const els = {
   grid:      document.getElementById('productGrid'),
   drawer:    document.getElementById('cartDrawer'),
@@ -21,380 +11,190 @@ const els = {
   subtotal:  document.getElementById('cartSubtotal'),
   shipping:  document.getElementById('shippingCost'),
   total:     document.getElementById('cartTotal'),
-  checkout:  document.getElementById('checkoutBtn'),
+  lineBtn:   document.getElementById('checkoutLine'),
+  mailBtn:   document.getElementById('checkoutMail'),
   addr:      document.getElementById('address'),
   name:      document.getElementById('custName'),
   phone:     document.getElementById('custPhone'),
-  district:  document.getElementById('district'), // NEW
+  district:  document.getElementById('district'),
 };
 
-// ---- utils ----
-function fmtTHB(v) { return 'THB ' + Number(v).toLocaleString('en-US'); }
-
-// ---- CLIENT-ONLY DELIVERY ESTIMATOR (no servers, no keys) ----
-const DELIVERY = {
-  baseTHB: 30,        // базовая часть
-  perKmTHB: 12,       // за км
-  minTHB: 70,         // минимум
-  freeThreshold: 500, // бесплатная доставка от суммы корзины
-  maxKm: 25           // максимум для расчёта
+const SHIP_BY_DISTRICT = {
+  RAMKHAM: 70,
+  LADPHRAO: 110,
+  SUKHUMVIT: 140,
+  SILOM: 150,
+  BANGNA: 160,        // твой референс 21 км ≈ 160฿
+  SAMUTPRAKAN: 160,
+  NONTHABURI: 180,
+  PATHUM: 210
 };
 
-// ===== AREAS (dropdown) =====
-const DISTRICTS = {
-  RAMKHAM:     { label: "Ramkhamhaeng / Bang Kapi / Hua Mak", km: 3 },
-  LADPHRAO:    { label: "Ladprao / Lat Krabang / On Nut / Suan Luang", km: 8 },
-  SUKHUMVIT:   { label: "Sukhumvit (Asoke–Phra Khanong)", km: 15 },
-  SILOM:       { label: "Bang Rak / Silom / Sathorn", km: 18 },
-  BANGNA:      { label: "Bang Na (incl. 10260–10270)", km: 21 }, // 21 км ≈ ~160฿
-  SAMUTPRAKAN: { label: "Samut Prakan", km: 21 },
-  NONTHABURI:  { label: "Nonthaburi", km: 23 },
-  PATHUM:      { label: "Rangsit / Pathum Thani", km: 28 },
-};
+const fmt = v => 'THB ' + Number(v||0).toLocaleString('en-US');
 
-// Haversine (км) — если пользователь вставил координаты/ссылку
-function haversineKm(a, b) {
-  const toRad = d => d * Math.PI / 180;
-  const R = 6371;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const s1 = Math.sin(dLat/2) ** 2 +
-             Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) *
-             Math.sin(dLng/2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(s1), Math.sqrt(1 - s1));
-  return R * c;
+// ---- load config & render ----
+async function boot(){
+  const cfg = await fetch('./data/products.json').then(r=>r.json());
+  state.cfg = cfg;
+  renderProducts();
+  wire();
+  updateCart();
 }
-
-// Парсим координаты из строки/ссылки
-function parseLatLngFromText(text) {
-  const s = (text || '').trim();
-  let m = s.match(/@(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)/);
-  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[3]) };
-  m = s.match(/\b(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)\b/);
-  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[3]) };
-  m = s.match(/[?&]q=(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)/);
-  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[3]) };
-  return null;
-}
-
-// Вычисляем км по селекту или тексту адреса (ZIP/координаты)
-function getKmFromDistrictOrText() {
-  const code = (els.district?.value || '').trim();
-  if (code && DISTRICTS[code]) return DISTRICTS[code].km;
-
-  // попытка по ZIP
-  const t = (els.addr?.value || '').toLowerCase();
-  const zipMatch = t.match(/\b\d{5}\b/);
-  if (zipMatch) {
-    const zip = zipMatch[0];
-    if (/^1026\d|1027\d$/.test(zip)) return 21; // Bang Na / Samut Prakan
-    if (/^1011\d$/.test(zip))       return 15; // Sukhumvit core
-    if (/^1050\d$/.test(zip))       return 18; // Silom/Sathon
-    if (/^110\d\d$/.test(zip))      return 23; // Nonthaburi
-    if (/^120\d\d$/.test(zip))      return 28; // Pathum Thani
-    if (/^1024\d$/.test(zip))       return 3;  // Ramkhamhaeng area
-    if (/^1025\d$/.test(zip))       return 8;  // Ladprao / On Nut etc
-  }
-
-  // попытка по координатам: считаем от точки магазина (state.config.pickup)
-  const coords = parseLatLngFromText(els.addr?.value || '');
-  if (coords && state?.config?.pickup) {
-    const km = haversineKm(state.config.pickup, coords);
-    return Math.round(km * 10) / 10;
-  }
-
-  return null;
-}
-
-// Обёртка, которую вызывает корзина (локальная логика, без ETA)
-function estimateFromApi(_pickupIgnored, _dropoffIgnored, subtotalTHB = 0) {
-  const freeThreshold = (state.config?.freeShippingThreshold ?? DELIVERY.freeThreshold);
-  const kmDetected = getKmFromDistrictOrText();
-
-  if (subtotalTHB >= freeThreshold) {
-    window.state = window.state || {};
-    window.state.shippingTHB = 0;
-    window.state.distanceKm  = kmDetected ?? 0;
-    return { ok:true, priceTHB:0, distanceKm:(kmDetected ?? 0) };
-  }
-
-  if (kmDetected == null) {
-    window.state = window.state || {};
-    window.state.shippingTHB = DELIVERY.minTHB;
-    window.state.distanceKm  = 0;
-    return { ok:false, priceTHB:DELIVERY.minTHB, distanceKm:0 };
-  }
-
-  const km = Math.min(kmDetected, DELIVERY.maxKm);
-  let price = DELIVERY.baseTHB + DELIVERY.perKmTHB * km;
-  if (price < DELIVERY.minTHB) price = DELIVERY.minTHB;
-  price = Math.round(price / 5) * 5; // округлим до 5฿
-
-  window.state = window.state || {};
-  window.state.shippingTHB = price;
-  window.state.distanceKm  = km;
-
-  return { ok:true, priceTHB:price, distanceKm:km };
-}
-// ---- /CLIENT-ONLY DELIVERY ESTIMATOR ----
-
-
-// ---- UI render ----
-function renderProducts() {
-  const cfg = state.config;
-  cfg.items.forEach(p => {
-    const el = document.createElement('div');
+function renderProducts(){
+  state.cfg.items.forEach(p=>{
+    const el = document.createElement('article');
     el.className = 'card';
     el.innerHTML = `
       <img src="${p.img}" alt="${p.name}">
       <h3>${p.name}</h3>
       <p>${p.desc}</p>
       <div class="row">
-        <span class="small">Size</span>
+        <span class="lbl">Size</span>
         <select class="size">
-          ${p.options.map((o, i) => `<option value="${i}">${o.label} — ${fmtTHB(o.price)}</option>`).join('')}
+          ${p.options.map((o,i)=>`<option value="${i}">${o.label} — ${fmt(o.price)}</option>`).join('')}
         </select>
       </div>
-      <div style="padding:12px">
-        <button class="btn ${p.outOfStock ? 'btn-purple' : 'btn-primary'} add" data-id="${p.id}">
-          ${p.outOfStock ? 'Preorder' : 'Add to cart'}
-        </button>
-        ${p.outOfStock ? '<span class="badge">ETA 7–10 days</span>' : ''}
-      </div>`;
+      <button class="add" data-id="${p.id}">Add to cart</button>
+    `;
     els.grid.appendChild(el);
   });
 }
 
-// ---- cart / totals ----
-function updateCart() {
-  els.items.innerHTML = '';
-
-  // строки корзины + subtotal
-  let subtotal = 0;
-  state.cart.forEach((it, idx) => {
-    if (it.id !== 'delivery') subtotal += it.price * it.qty;
-
-    const row = document.createElement('div');
-    row.className = 'row';
-    row.innerHTML = `
-      <img src="${it.img}" alt="">
-      <div style="flex:1">
-        <div style="font-weight:600">
-          ${it.name}${it.variant ? (' — ' + it.variant) : ''}${it.preorder ? '<span class="badge">PREORDER</span>' : ''}
-        </div>
-        <div class="small">${fmtTHB(it.price)} × ${it.qty}</div>
-      </div>
-      ${it.id === 'delivery' ? '' : `
-        <div>
-          <button data-act="dec" data-idx="${idx}">−</button>
-          <button data-act="inc" data-idx="${idx}">+</button>
-          <button data-act="del" data-idx="${idx}">✕</button>
-        </div>`}
-    `;
-    els.items.appendChild(row);
-  });
+// ---- cart logic ----
 function updateCart(){
   els.items.innerHTML = '';
   let subtotal = 0;
 
-  // рендер позиций
-  state.cart.forEach((it, idx) => {
-    if (it.id !== 'delivery') subtotal += it.price * it.qty;
+  state.cart.forEach((it,idx)=>{
+    if (it.id !== 'delivery') subtotal += it.price*it.qty;
     const row = document.createElement('div');
-    row.className = 'row';
+    row.className = 'cart-row';
     row.innerHTML = `
       <img src="${it.img}" alt="">
       <div style="flex:1">
-        <div style="font-weight:600">
-          ${it.name}${it.variant ? (' — ' + it.variant) : ''}${it.preorder ? '<span class="badge">PREORDER</span>' : ''}
-        </div>
-        <div class="small">${fmtTHB(it.price)} × ${it.qty}</div>
+        <div style="font-weight:600">${it.name}${it.variant?` — ${it.variant}`:''}</div>
+        <div class="muted">${fmt(it.price)} × ${it.qty}</div>
       </div>
-      ${it.id === 'delivery' ? '' : `
-        <div>
-          <button data-act="dec" data-idx="${idx}">−</button>
-          <button data-act="inc" data-idx="${idx}">+</button>
-          <button data-act="del" data-idx="${idx}">✕</button>
+      ${it.id==='delivery' ? '' : `
+        <div class="qty">
+          <button class="counter" data-act="dec" data-idx="${idx}">−</button>
+          <button class="counter" data-act="inc" data-idx="${idx}">+</button>
+          <button class="counter" data-act="del" data-idx="${idx}">✕</button>
         </div>`}
     `;
     els.items.appendChild(row);
   });
 
-  const coords = parseLatLngFromText(els.addr.value.trim());
+  // shipping by district
+  let shipping = 0;
+  const sel = els.district.value;
+  if (sel && subtotal < state.cfg.freeShippingTHB) shipping = SHIP_BY_DISTRICT[sel] || 0;
 
-  const applyTotals = () => {
-    const shipping =
-      (state.lastQuote && state.lastQuote.ok && typeof state.lastQuote.priceTHB === 'number')
-        ? state.lastQuote.priceTHB
-        : (subtotal >= state.config.freeShippingThreshold ? 0 : DELIVERY.minTHB);
+  // maintain "delivery" line
+  const dIdx = state.cart.findIndex(i=>i.id==='delivery');
+  if (shipping>0){
+    const deliveryLine = { id:'delivery', name:'Delivery', variant:'District rate', price:shipping, qty:1, img:'./images/delivery.png' };
+    if (dIdx>-1) state.cart[dIdx] = deliveryLine; else state.cart.push(deliveryLine);
+  } else if (dIdx>-1){ state.cart.splice(dIdx,1); }
 
-    const dIdx = state.cart.findIndex(x => x.id === 'delivery');
-    if (shipping > 0){
-      const eta = state.lastQuote?.etaMin ? `~${state.lastQuote.etaMin} min` : 'Local courier (estimate)';
-      const it = { id:'delivery', name:'Delivery', variant: eta, price: shipping, qty:1, img:'./images/delivery.png' };
-      if (dIdx>-1) state.cart[dIdx] = it; else state.cart.push(it);
-    } else if (dIdx>-1){
-      state.cart.splice(dIdx,1);
-    }
+  const total = state.cart.reduce((s,i)=>s+i.price*i.qty,0);
 
-    const total = state.cart.reduce((s,i)=>s+i.price*i.qty,0);
-    els.subtotal.textContent = fmtTHB(subtotal);
-    els.shipping.textContent = fmtTHB(shipping);
-    els.total.textContent    = fmtTHB(total);
+  els.subtotal.textContent = fmt(subtotal);
+  els.shipping.textContent = fmt(shipping);
+  els.total.textContent    = fmt(total);
 
-    const items = state.cart.filter(i=>i.id!=='delivery').reduce((s,i)=>s+i.qty,0);
-    els.count.textContent = items;
+  const itemsCount = state.cart.filter(i=>i.id!=='delivery').reduce((s,i)=>s+i.qty,0);
+  els.count.textContent = itemsCount;
 
-    els.checkout.disabled = !(items>0 && els.name.value.trim() && els.phone.value.trim() && els.addr.value.trim());
-  };
-
-  // === НОВОЕ: приоритет – выпадающий район ===
-  const opt = els.district?.selectedOptions?.[0];
-  const kmFromDistrict = opt ? Number(opt.dataset.km) : NaN;
-
-  if (!Number.isNaN(kmFromDistrict)) {
-    const km = Math.min(kmFromDistrict, DELIVERY.maxKm);
-    let price = DELIVERY.baseTHB + km * DELIVERY.perKmTHB;
-    price = Math.max(price, DELIVERY.minTHB);
-    if (subtotal >= state.config.freeShippingThreshold) price = 0;
-
-    state.lastQuote = { ok:true, priceTHB: Math.round(price), distanceKm: kmFromDistrict };
-    applyTotals();
-    return;
-  }
-
-  // Если район не выбран — пробуем координаты из адреса
-  if (coords) {
-    estimateFromApi(state.config.pickup, coords, subtotal)
-      .then(q => { state.lastQuote = q; applyTotals(); })
-      .catch(() => { state.lastQuote = null; applyTotals(); });
-  } else {
-    state.lastQuote = null;
-    applyTotals();
-  }
+  const ready = itemsCount>0 && els.name.value.trim() && els.phone.value.trim() && els.addr.value.trim();
+  els.lineBtn.disabled = !ready;
+  els.mailBtn.disabled = !ready;
 }
 
-  const applyTotals = () => {
-    const shipping =
-      (state.lastQuote && state.lastQuote.ok && typeof state.lastQuote.priceTHB === 'number')
-        ? state.lastQuote.priceTHB
-        : (subtotal >= (state.config?.freeShippingThreshold ?? DELIVERY.freeThreshold) ? 0 : DELIVERY.minTHB);
-
-    // обновим/вставим позицию Delivery
-    const dIdx = state.cart.findIndex(x => x.id === 'delivery');
-    if (shipping > 0) {
-      const km = (typeof state.lastQuote?.distanceKm === 'number') ? `~${state.lastQuote.distanceKm} km` : 'Selected area';
-      const it = { id: 'delivery', name: 'Delivery', variant: km, price: shipping, qty: 1, img: './images/delivery.png' };
-      if (dIdx > -1) state.cart[dIdx] = it; else state.cart.push(it);
-    } else if (dIdx > -1) {
-      state.cart.splice(dIdx, 1);
-    }
-
-    const total = state.cart.reduce((s, i) => s + i.price * i.qty, 0);
-    els.subtotal.textContent = fmtTHB(subtotal);
-    els.shipping.textContent = fmtTHB(shipping);
-    els.total.textContent    = fmtTHB(total);
-
-    const items = state.cart.filter(i => i.id !== 'delivery').reduce((s, i) => s + i.qty, 0);
-    els.count.textContent = items;
-
-    els.checkout.disabled = !(items > 0 && els.name.value.trim() && els.phone.value.trim() && els.addr.value.trim());
-  };
-
-  // ВСЕГДА считаем локально (без координат/сетевых вызовов)
-  estimateFromApi(null, null, subtotal)
-    .then(q => { state.lastQuote = q; applyTotals(); })
-    .catch(() => { state.lastQuote = null; applyTotals(); });
-}
-
-// ---- LINE message ----
-function buildOrderText() {
+function buildMessage(){
   const lines = state.cart
-    .filter(i => i.id !== 'delivery')
-    .map(i => `• ${i.name}${i.variant ? ` (${i.variant})` : ''}${i.preorder ? ' [PREORDER]' : ''} x${i.qty} — THB ${i.price}`)
+    .filter(i=>i.id!=='delivery')
+    .map(i=>`• ${i.name}${i.variant?` (${i.variant})`:''} x${i.qty} — THB ${i.price}`)
     .join('\n');
 
-  const subtotal = state.cart.filter(i => i.id !== 'delivery').reduce((s, i) => s + i.price * i.qty, 0);
-  const delivery = state.cart.find(i => i.id === 'delivery')?.price || 0;
-  const total    = state.cart.reduce((s, i) => s + i.price * i.qty, 0);
-
-  const dist = (state.lastQuote && typeof state.lastQuote.distanceKm === 'number')
-    ? `\nDistance approx: ${state.lastQuote.distanceKm.toFixed(1)} km`
-    : '';
+  const subtotal = state.cart.filter(i=>i.id!=='delivery').reduce((s,i)=>s+i.price*i.qty,0);
+  const delivery = state.cart.find(i=>i.id==='delivery')?.price || 0;
+  const total    = state.cart.reduce((s,i)=>s+i.price*i.qty,0);
 
   return `Order from 5 o'clock Tea
 ${lines}
 
 Subtotal: THB ${subtotal}
-${delivery > 0 ? `Delivery: THB ${delivery}\n` : ''}Total: THB ${total}${dist}
+${delivery>0?`Delivery: THB ${delivery}\n`:''}Total: THB ${total}
 
 Name: ${els.name.value.trim()}
 Phone: ${els.phone.value.trim()}
+District: ${els.district.options[els.district.selectedIndex]?.text || '-'}
 Address: ${els.addr.value.trim()}`;
 }
 
-function openLine() {
-  const msg = buildOrderText();
-  const id = state.config.lineId;
+// ---- events ----
+function wire(){
+  document.addEventListener('click', (e)=>{
+    const act = e.target.getAttribute('data-act');
+    if (act){
+      const idx = +e.target.getAttribute('data-idx');
+      if (act==='inc') state.cart[idx].qty += 1;
+      if (act==='dec') state.cart[idx].qty = Math.max(1, state.cart[idx].qty-1);
+      if (act==='del') { if (state.cart[idx].id!=='delivery') state.cart.splice(idx,1); }
+      updateCart();
+      return;
+    }
 
-  const https = 'https://line.me/R/oaMessage/' +
-    encodeURIComponent(id) + '/?' +
-    encodeURIComponent(msg).replace(/%0A/g, '%0A');
+    if (e.target.classList.contains('add')){
+      const card = e.target.closest('.card');
+      const pid  = e.target.getAttribute('data-id');
+      const sizeSel = card.querySelector('.size');
+      const p = state.cfg.items.find(x=>x.id===pid);
+      const opt = p.options[+sizeSel.value];
 
-  const opened = window.open(https, '_blank');
-  if (!opened) {
-    navigator.clipboard.writeText(msg).catch(() => {});
-    alert('Order text copied. Paste it into LINE chat.');
-    window.open('https://line.me/R/ti/p/' + encodeURIComponent(id), '_blank');
-  }
+      const found = state.cart.find(i=>i.id===pid && i.variant===opt.label);
+      if (found) found.qty += 1;
+      else state.cart.push({ id:pid, name:p.name, variant:opt.label, price:opt.price, qty:1, img:p.img });
+
+      updateCart();
+      els.drawer.classList.add('open'); // автооткрытие
+    }
+  });
+
+  // open/close cart
+  els.open.addEventListener('click', ()=> els.drawer.classList.add('open'));
+  els.close.addEventListener('click', ()=> els.drawer.classList.remove('open'));
+  els.closeBtn.addEventListener('click', ()=> els.drawer.classList.remove('open'));
+
+  // recompute on form changes
+  ['input','change','blur'].forEach(ev=>{
+    els.name.addEventListener(ev, updateCart);
+    els.phone.addEventListener(ev, updateCart);
+    els.addr.addEventListener(ev, updateCart);
+    els.district.addEventListener(ev, updateCart);
+  });
+
+  // LINE checkout
+  els.lineBtn.addEventListener('click', ()=>{
+    const msg = buildMessage();
+    const id  = state.cfg.lineId;
+    const url = 'https://line.me/R/oaMessage/' + encodeURIComponent(id) + '/?' +
+                encodeURIComponent(msg).replace(/%0A/g,'%0A');
+    const w = window.open(url,'_blank');
+    if (!w){
+      navigator.clipboard.writeText(msg).catch(()=>{});
+      alert('Order text copied. Paste it into LINE chat.');
+    }
+  });
+
+  // Email checkout
+  els.mailBtn.addEventListener('click', ()=>{
+    const subject = encodeURIComponent("Order — 5 O'CLOCK Tea");
+    const body    = encodeURIComponent(buildMessage());
+    const mailto  = `mailto:${state.cfg.email}?subject=${subject}&body=${body}`;
+    window.location.href = mailto;
+  });
 }
 
-// ---- events ----
-document.addEventListener('click', (e) => {
-  const act = e.target.getAttribute('data-act');
-  if (act) {
-    const idx = parseInt(e.target.getAttribute('data-idx'), 10);
-    if (act === 'inc') state.cart[idx].qty += 1;
-    if (act === 'dec') state.cart[idx].qty = Math.max(1, state.cart[idx].qty - 1);
-    if (act === 'del') { if (state.cart[idx].id !== 'delivery') state.cart.splice(idx, 1); }
-    updateCart();
-    return;
-  }
-
-  if (e.target.classList.contains('add')) {
-    const card = e.target.closest('.card');
-    const sel  = card.querySelector('.size');
-    const pid  = e.target.getAttribute('data-id');
-    const p    = state.config.items.find(x => x.id === pid);
-    const opt  = p.options[parseInt(sel.value, 10)];
-
-    const found = state.cart.find(i => i.id === pid && i.variant === opt.label);
-    if (found) found.qty += 1;
-    else state.cart.push({
-      id: pid, name: p.name, variant: opt.label,
-      price: opt.price, qty: 1, img: p.img, preorder: !!p.outOfStock
-    });
-
-    updateCart();
-    els.drawer.classList.add('open');
-  }
-});
-
-['input','change','blur'].forEach(ev => els.addr?.addEventListener(ev, updateCart));
-['change'].forEach(ev => els.district?.addEventListener(ev, updateCart)); // NEW
-['input','change','blur'].forEach(ev => els.name.addEventListener(ev, updateCart));
-['input','change','blur'].forEach(ev => els.phone.addEventListener(ev, updateCart));
-['change','input','blur'].forEach(ev => els.district.addEventListener(ev, updateCart));
-
-
-els.open.addEventListener('click',  () => els.drawer.classList.add('open'));
-els.close.addEventListener('click', () => els.drawer.classList.remove('open'));
-els.closeBtn.addEventListener('click', () => els.drawer.classList.remove('open'));
-els.checkout.addEventListener('click', (e) => { e.preventDefault(); openLine(); });
-
-// ---- boot ----
-loadConfig().then(cfg => {
-  state.config = cfg;
-  renderProducts();
-  updateCart();
-});
+boot();
