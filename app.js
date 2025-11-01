@@ -193,6 +193,86 @@ function updateCart() {
     `;
     els.items.appendChild(row);
   });
+function updateCart(){
+  els.items.innerHTML = '';
+  let subtotal = 0;
+
+  // рендер позиций
+  state.cart.forEach((it, idx) => {
+    if (it.id !== 'delivery') subtotal += it.price * it.qty;
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `
+      <img src="${it.img}" alt="">
+      <div style="flex:1">
+        <div style="font-weight:600">
+          ${it.name}${it.variant ? (' — ' + it.variant) : ''}${it.preorder ? '<span class="badge">PREORDER</span>' : ''}
+        </div>
+        <div class="small">${fmtTHB(it.price)} × ${it.qty}</div>
+      </div>
+      ${it.id === 'delivery' ? '' : `
+        <div>
+          <button data-act="dec" data-idx="${idx}">−</button>
+          <button data-act="inc" data-idx="${idx}">+</button>
+          <button data-act="del" data-idx="${idx}">✕</button>
+        </div>`}
+    `;
+    els.items.appendChild(row);
+  });
+
+  const coords = parseLatLngFromText(els.addr.value.trim());
+
+  const applyTotals = () => {
+    const shipping =
+      (state.lastQuote && state.lastQuote.ok && typeof state.lastQuote.priceTHB === 'number')
+        ? state.lastQuote.priceTHB
+        : (subtotal >= state.config.freeShippingThreshold ? 0 : DELIVERY.minTHB);
+
+    const dIdx = state.cart.findIndex(x => x.id === 'delivery');
+    if (shipping > 0){
+      const eta = state.lastQuote?.etaMin ? `~${state.lastQuote.etaMin} min` : 'Local courier (estimate)';
+      const it = { id:'delivery', name:'Delivery', variant: eta, price: shipping, qty:1, img:'./images/delivery.png' };
+      if (dIdx>-1) state.cart[dIdx] = it; else state.cart.push(it);
+    } else if (dIdx>-1){
+      state.cart.splice(dIdx,1);
+    }
+
+    const total = state.cart.reduce((s,i)=>s+i.price*i.qty,0);
+    els.subtotal.textContent = fmtTHB(subtotal);
+    els.shipping.textContent = fmtTHB(shipping);
+    els.total.textContent    = fmtTHB(total);
+
+    const items = state.cart.filter(i=>i.id!=='delivery').reduce((s,i)=>s+i.qty,0);
+    els.count.textContent = items;
+
+    els.checkout.disabled = !(items>0 && els.name.value.trim() && els.phone.value.trim() && els.addr.value.trim());
+  };
+
+  // === НОВОЕ: приоритет – выпадающий район ===
+  const opt = els.district?.selectedOptions?.[0];
+  const kmFromDistrict = opt ? Number(opt.dataset.km) : NaN;
+
+  if (!Number.isNaN(kmFromDistrict)) {
+    const km = Math.min(kmFromDistrict, DELIVERY.maxKm);
+    let price = DELIVERY.baseTHB + km * DELIVERY.perKmTHB;
+    price = Math.max(price, DELIVERY.minTHB);
+    if (subtotal >= state.config.freeShippingThreshold) price = 0;
+
+    state.lastQuote = { ok:true, priceTHB: Math.round(price), distanceKm: kmFromDistrict };
+    applyTotals();
+    return;
+  }
+
+  // Если район не выбран — пробуем координаты из адреса
+  if (coords) {
+    estimateFromApi(state.config.pickup, coords, subtotal)
+      .then(q => { state.lastQuote = q; applyTotals(); })
+      .catch(() => { state.lastQuote = null; applyTotals(); });
+  } else {
+    state.lastQuote = null;
+    applyTotals();
+  }
+}
 
   const applyTotals = () => {
     const shipping =
@@ -304,6 +384,8 @@ document.addEventListener('click', (e) => {
 ['change'].forEach(ev => els.district?.addEventListener(ev, updateCart)); // NEW
 ['input','change','blur'].forEach(ev => els.name.addEventListener(ev, updateCart));
 ['input','change','blur'].forEach(ev => els.phone.addEventListener(ev, updateCart));
+['change','input','blur'].forEach(ev => els.district.addEventListener(ev, updateCart));
+
 
 els.open.addEventListener('click',  () => els.drawer.classList.add('open'));
 els.close.addEventListener('click', () => els.drawer.classList.remove('open'));
