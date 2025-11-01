@@ -139,42 +139,47 @@
       <input id="custName" class="input" placeholder="Your name"/>
       <label class="small">Phone (+66)</label>
       <input id="custPhone" class="input" placeholder="+66 8x xxx xxxx"/>
-      <div>
-        <label class="small">District / Area</label>
-        <select id="district">
-          <option value="">Select…</option>
-          <option value="RAMKHAM">Ramkhamhaeng / Bang Kapi / Hua Mak (~3 km)</option>
-          <option value="LADPHRAO">Ladprao / Lat Krabang / On Nut / Suan Luang (~8 km)</option>
-          <option value="SUKHUMVIT">Sukhumvit (Asoke–Phra Khanong) (~15 km)</option>
-          <option value="SILOM">Bang Rak / Silom / Sathorn (~18 km)</option>
-          <option value="BANGNA">Bang Na (incl. 10260–10270) (~21 km)</option>
-          <option value="SAMUTPRAKAN">Samut Prakan (~21 km)</option>
-          <option value="NONTHABURI">Nonthaburi (~23 km)</option>
-          <option value="PATHUM">Rangsit / Pathum Thani (~28 km)</option>
-        </select>
-  <label for="address" class="text-sm font-medium mt-3 block">Full address (free text)</label>
-  <input id="address" type="text" autocomplete="street-address"
-         class="w-full border rounded-lg p-3 text-[15px]"
-         placeholder="Street, district, ZIP">
-</div>
-      <label class="small">Address (paste Google Maps link or text)</label>
-      <textarea id="address" class="input" rows="3" placeholder="e.g. Indy Ramkhamhaeng 2, Soi … or paste link with @lat,lng"></textarea>
-      <div style="display:flex;justify-content:space-between;margin-top:12px">
-        <div>Subtotal</div><div id="cartSubtotal">THB 0</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:4px">
-        <div>Delivery (estimate)</div><div id="shippingCost">THB 0</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:8px" class="total">
-        <div>Total</div><div id="cartTotal">THB 0</div>
-      </div>
+<div class="summary">
+  <label class="small">Name</label>
+  <input id="custName" class="input" placeholder="Your name"/>
 
-      <div class="footer">
-        <button id="checkoutBtn" class="btn line" disabled>Order via LINE</button>
-        <button id="closeCartBtn" class="btn">Close</button>
-      </div>
-      <div class="small" style="margin-top:6px">Preorder items: ETA 7–10 days.</div>
-    </div>
+  <label class="small">Phone (+66)</label>
+  <input id="custPhone" class="input" placeholder="+66 8x xxx xxxx"/>
+
+  <label class="small">District / Area</label>
+  <select id="district" class="input">
+    <option value="">Select…</option>
+    <option data-km="3">Ramkhamhaeng / Bang Kapi / Hua Mak (~3 km)</option>
+    <option data-km="8">Ladprao / Lat Krabang / On Nut / Suan Luang (~8 km)</option>
+    <option data-km="15">Sukhumvit (Asoke–Phra Khanong) (~15 km)</option>
+    <option data-km="18">Bang Rak / Silom / Sathorn (~18 km)</option>
+    <option data-km="21">Bang Na (incl. 10260–10270) (~21 km)</option>
+    <option data-km="21">Samut Prakan (~21 km)</option>
+    <option data-km="23">Nonthaburi (~23 km)</option>
+    <option data-km="28">Rangsit / Pathum Thani (~28 km)</option>
+  </select>
+
+  <label class="small" for="address">Full address (free text or Google Maps link)</label>
+  <textarea id="address" class="input" rows="3"
+            placeholder="e.g. Indy Ramkhamkhaeng 2, Soi … or paste link with @lat,lng"></textarea>
+
+  <div style="display:flex;justify-content:space-between;margin-top:12px">
+    <div>Subtotal</div><div id="cartSubtotal">THB 0</div>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-top:4px">
+    <div>Delivery (estimate)</div><div id="shippingCost">THB 0</div>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-top:8px" class="total">
+    <div>Total</div><div id="cartTotal">THB 0</div>
+  </div>
+
+  <div class="footer">
+    <button id="checkoutBtn" class="btn line" type="button" disabled>Order via LINE</button>
+    <button id="closeCartBtn" class="btn" type="button">Close</button>
+  </div>
+  <div class="small" style="margin-top:6px">Preorder items: ETA 7–10 days.</div>
+</div>
+
   </aside>
 
 <script src="./app.js"></script>
