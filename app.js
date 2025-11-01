@@ -1,192 +1,225 @@
-// ---- config / state ----
-const state = { cfg: null, cart: [] };
+// ---- Config (no server needed) ----
+const CONFIG = {
+  currency: "THB",
+  lineId: "@924uwcib",
+  freeShippingThreshold: 500,
+  pickup: { lat: 13.6948, lng: 100.7186 }, // Ramkhamhaeng 2 (your base)
+  products: [
+    { id:"wild-cherry",        name:"Wild Cherry",                img:"./images/wild-cherry.jpg",        options:[{label:"50 g", price:195}], desc:"Black tea with cherry notes — bright and aromatic." },
+    { id:"taiga-blend",        name:"Taiga Blend",                img:"./images/taiga-blend.jpg",        options:[{label:"50 g", price:195}], desc:"Black tea, berries & forest vibes. Cozy and bold." },
+    { id:"strawberries-cream", name:"Strawberry & Cream",         img:"./images/strawberries-cream.jpg", options:[{label:"50 g", price:195}], desc:"Black tea with strawberry pieces, goji berries & candied pineapple." },
+    { id:"rose-strawberry",    name:"Rose Strawberry Fruit Tea",  img:"./images/rose-strawberry.jpg",    options:[{label:"50 g", price:195}], desc:"Black tea with apples, chokeberry, strawberry & rose petals." },
+    { id:"citrus-orange",      name:"Citrus Orange Fruit Tea",    img:"./images/citrus-orange.jpg",      options:[{label:"50 g", price:195}], desc:"Sun-dried oranges, apples & hibiscus for a refreshing citrus aroma." },
+    { id:"rose-hibiscus",      name:"Rose Hibiscus Fruit Tea",    img:"./images/rose-hibiscus.jpg",      options:[{label:"50 g", price:195}], desc:"Hibiscus, rose petals & berries. Ruby-red infusion." },
+    { id:"tea-sampler",        name:"Tea Sampler (3×20g) Set",    img:"./images/tea-sample.jpg",         options:[{label:"Set",   price:195}], desc:"Taiga + Strawberries & Cream + Wild Cherry (3×20g). Perfect to try." }
+  ]
+};
+
+// Bangkok districts (50) with rough distance buckets from Ramkhamhaeng 2
+// km used only for pricing; tweak numbers if нужно.
+const BKK_DISTRICTS = [
+  ["Bang Kapi",8],["Hua Mak",5],["Saphan Sung",8],["Watthana",12],["Suan Luang",8],
+  ["Lat Krabang",15],["Prawet",12],["Phra Khanong",12],["Bang Na",21],["Khlong Toei",14],
+  ["Ratchathewi",14],["Pathum Wan",14],["Bang Rak",16],["Sathon",18],["Yan Nawa",18],
+  ["Khan Na Yao",12],["Bueng Kum",10],["Lat Phrao",10],["Chatuchak",14],["Din Daeng",14],
+  ["Huai Khwang",12],["Bang Sue",16],["Dusit",18],["Phaya Thai",15],["Bangkok Noi",22],
+  ["Bangkok Yai",22],["Phasi Charoen",24],["Bang Khae",24],["Nong Khaem",26],["Taling Chan",24],
+  ["Thawi Watthana",28],["Bangkhunthian",28],["Chom Thong",24],["Rat Burana",22],["Bang Kho Laem",18],
+  ["Khlong San",18],["Thon Buri",20],["Bang Bon",28],["Thung Khru",25],["Chatu Chak (Mo Chit)",14],
+  ["Min Buri",16],["Khlong Sam Wa",18],["Nong Chok",24],["Sai Mai",22],["Don Mueang",22],
+  ["Bang Phlat",20],["Lak Si",20],["Phra Nakhon (Old Town)",18],["Pom Prap Sattru Phai",16],["Samphanthawong",16]
+];
+
+const DELIVERY = { base:30, perKm:12, min:70, maxKm:30 };
+
+// ---- State & Refs ----
 const els = {
-  grid:      document.getElementById('productGrid'),
-  drawer:    document.getElementById('cartDrawer'),
-  open:      document.getElementById('openCart'),
-  close:     document.getElementById('closeCart'),
-  closeBtn:  document.getElementById('closeCartBtn'),
-  items:     document.getElementById('cartItems'),
-  count:     document.getElementById('cartCount'),
-  subtotal:  document.getElementById('cartSubtotal'),
-  shipping:  document.getElementById('shippingCost'),
-  total:     document.getElementById('cartTotal'),
-  lineBtn:   document.getElementById('checkoutLine'),
-  mailBtn:   document.getElementById('checkoutMail'),
-  addr:      document.getElementById('address'),
-  name:      document.getElementById('custName'),
-  phone:     document.getElementById('custPhone'),
-  district:  document.getElementById('district'),
+  grid:      document.getElementById("productGrid"),
+  drawer:    document.getElementById("cartDrawer"),
+  open:      document.getElementById("openCart"),
+  close:     document.getElementById("closeCart"),
+  closeBtn:  document.getElementById("closeCartBtn"),
+  items:     document.getElementById("cartItems"),
+  count:     document.getElementById("cartCount"),
+  subtotal:  document.getElementById("cartSubtotal"),
+  shipping:  document.getElementById("shippingCost"),
+  total:     document.getElementById("cartTotal"),
+  checkout:  document.getElementById("checkoutBtn"),
+  emailBtn:  document.getElementById("emailBtn"),
+  addr:      document.getElementById("address"),
+  name:      document.getElementById("custName"),
+  phone:     document.getElementById("custPhone"),
+  district:  document.getElementById("district"),
 };
+const state = { cart:[], lastQuote:null };
 
-const SHIP_BY_DISTRICT = {
-  RAMKHAM: 70,
-  LADPHRAO: 110,
-  SUKHUMVIT: 140,
-  SILOM: 150,
-  BANGNA: 160,
-  SAMUTPRAKAN: 160,
-  NONTHABURI: 180,
-  PATHUM: 210
-};
-
-const fmt = v => 'THB ' + Number(v||0).toLocaleString('en-US');
-
-async function boot(){
-  const cfg = await fetch('./data/products.json').then(r=>r.json());
-  state.cfg = cfg;
-  renderProducts();
-  wire();
-  updateCart();
+// ---- Utils ----
+const fmt = v => `${CONFIG.currency} ${Number(v).toLocaleString("en-US")}`;
+function calcShippingByKm(km, subtotal){
+  if (subtotal >= CONFIG.freeShippingThreshold) return 0;
+  const k = Math.min(km, DELIVERY.maxKm);
+  return Math.max(DELIVERY.min, Math.round(DELIVERY.base + DELIVERY.perKm * k));
+}
+function currentDistrictKm(){
+  const opt = els.district.options[els.district.selectedIndex];
+  return opt ? Number(opt.dataset.km || 0) : 0;
 }
 
+// ---- Render products (stable layout) ----
 function renderProducts(){
-  state.cfg.items.forEach(p=>{
-    const el = document.createElement('article');
-    el.className = 'card';
-    el.innerHTML = `
-      <img src="${p.img}" alt="${p.name}">
-      <h3>${p.name}</h3>
-      <p>${p.desc}</p>
-      <div class="row">
-        <span class="lbl">Size</span>
-        <select class="size">
-          ${p.options.map((o,i)=>`<option value="${i}">${o.label} — ${fmt(o.price)}</option>`).join('')}
-        </select>
+  CONFIG.products.forEach(p=>{
+    const card = document.createElement("article");
+    card.className = "card";
+    card.innerHTML = `
+      <img src="${p.img}" alt="${p.name}" class="card__img" loading="lazy">
+      <div class="card__body">
+        <div class="card__title">${p.name}</div>
+        <div class="card__desc">${p.desc}</div>
+        <div class="row">
+          <select class="select sizeSel">
+            ${p.options.map((o,i)=>`<option value="${i}">${o.label} — ${fmt(o.price)}</option>`).join("")}
+          </select>
+          <button class="btn primary addBtn" data-id="${p.id}">Add to cart</button>
+        </div>
       </div>
-      <button class="add" data-id="${p.id}">Add to cart</button>
     `;
-    els.grid.appendChild(el);
+    els.grid.appendChild(card);
   });
 }
 
+// ---- Cart rendering / totals ----
 function updateCart(){
-  els.items.innerHTML = '';
+  els.items.innerHTML = "";
   let subtotal = 0;
 
-  state.cart.forEach((it,idx)=>{
-    if (it.id !== 'delivery') subtotal += it.price*it.qty;
-    const row = document.createElement('div');
-    row.className = 'cart-row';
+  state.cart.forEach((item, idx)=>{
+    if (item.id !== "delivery") subtotal += item.price * item.qty;
+
+    const row = document.createElement("div");
+    row.className = "item";
     row.innerHTML = `
-      <img src="${it.img}" alt="">
-      <div style="flex:1">
-        <div style="font-weight:600">${it.name}${it.variant?` — ${it.variant}`:''}</div>
-        <div class="muted">${fmt(it.price)} × ${it.qty}</div>
+      <img src="${item.img}" alt="">
+      <div class="meta">
+        <div><strong>${item.name}</strong>${item.variant?` — ${item.variant}`:""}</div>
+        <div class="tiny">${fmt(item.price)} × ${item.qty}</div>
       </div>
-      ${it.id==='delivery' ? '' : `
-        <div class="qty">
-          <button class="counter" data-act="dec" data-idx="${idx}">−</button>
-          <button class="counter" data-act="inc" data-idx="${idx}">+</button>
-          <button class="counter" data-act="del" data-idx="${idx}">✕</button>
-        </div>`}
+      ${item.id==="delivery" ? "" : `
+      <div class="qty">
+        <button class="qbtn" data-act="dec" data-idx="${idx}">−</button>
+        <button class="qbtn" data-act="inc" data-idx="${idx}">+</button>
+        <button class="qbtn" data-act="del" data-idx="${idx}">✕</button>
+      </div>`}
     `;
     els.items.appendChild(row);
   });
 
-  let shipping = 0;
-  const sel = els.district.value;
-  if (sel && subtotal < state.cfg.freeShippingTHB) shipping = SHIP_BY_DISTRICT[sel] || 0;
+  const km = currentDistrictKm();
+  const shipping = calcShippingByKm(km, subtotal);
 
-  const dIdx = state.cart.findIndex(i=>i.id==='delivery');
-  if (shipping>0){
-    const deliveryLine = { id:'delivery', name:'Delivery', variant:'District rate', price:shipping, qty:1, img:'./images/delivery.png' };
-    if (dIdx>-1) state.cart[dIdx] = deliveryLine; else state.cart.push(deliveryLine);
-  } else if (dIdx>-1){ state.cart.splice(dIdx,1); }
+  // ensure single delivery line
+  const dIdx = state.cart.findIndex(i=>i.id==="delivery");
+  if (shipping > 0){
+    const item = { id:"delivery", name:"Delivery", variant:`${km?`~${km} km`: "Local"}`, price:shipping, qty:1, img:"./images/delivery.png" };
+    if (dIdx>-1) state.cart[dIdx]=item; else state.cart.push(item);
+  } else if (dIdx>-1){
+    state.cart.splice(dIdx,1);
+  }
 
-  const total = state.cart.reduce((s,i)=>s+i.price*i.qty,0);
-
+  const total = state.cart.reduce((s,i)=> s + i.price*i.qty, 0);
   els.subtotal.textContent = fmt(subtotal);
   els.shipping.textContent = fmt(shipping);
   els.total.textContent    = fmt(total);
 
-  const itemsCount = state.cart.filter(i=>i.id!=='delivery').reduce((s,i)=>s+i.qty,0);
+  const itemsCount = state.cart.filter(i=>i.id!=="delivery").reduce((s,i)=>s+i.qty,0);
   els.count.textContent = itemsCount;
 
-  const ready = itemsCount>0 && els.name.value.trim() && els.phone.value.trim() && els.addr.value.trim();
-  els.lineBtn.disabled = !ready;
-  els.mailBtn.disabled = !ready;
+  els.checkout.disabled = !(itemsCount>0 && els.name.value.trim() && els.phone.value.trim() && els.addr.value.trim());
+  // update email link
+  const m = buildOrderMessage();
+  els.emailBtn.href = `mailto:5oclock@gmail.com?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.text)}`;
 }
 
-function buildMessage(){
+function buildOrderMessage(){
   const lines = state.cart
-    .filter(i=>i.id!=='delivery')
+    .filter(i=>i.id!=="delivery")
     .map(i=>`• ${i.name}${i.variant?` (${i.variant})`:''} x${i.qty} — THB ${i.price}`)
-    .join('\\n');
+    .join("\n");
 
-  const subtotal = state.cart.filter(i=>i.id!=='delivery').reduce((s,i)=>s+i.price*i.qty,0);
-  const delivery = state.cart.find(i=>i.id==='delivery')?.price || 0;
+  const subtotal = state.cart.filter(i=>i.id!=="delivery").reduce((s,i)=>s+i.price*i.qty,0);
   const total    = state.cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const delivery = state.cart.find(i=>i.id==="delivery")?.price || 0;
 
-  return `Order from 5 o'clock Tea
+  const text =
+`Order from 5 o'clock Tea
 ${lines}
 
 Subtotal: THB ${subtotal}
-${delivery>0?`Delivery: THB ${delivery}\\n`:''}Total: THB ${total}
+${delivery>0?`Delivery: THB ${delivery}\n`:''}Total: THB ${total}
 
+District: ${els.district.value || '-'}
 Name: ${els.name.value.trim()}
 Phone: ${els.phone.value.trim()}
-District: ${els.district.options[els.district.selectedIndex]?.text || '-'}
 Address: ${els.addr.value.trim()}`;
+
+  return { text, subject:`Order — 5 o'clock Tea (THB ${total})` };
 }
 
-function wire(){
-  document.addEventListener('click', (e)=>{
-    const act = e.target.getAttribute('data-act');
-    if (act){
-      const idx = +e.target.getAttribute('data-idx');
-      if (act==='inc') state.cart[idx].qty += 1;
-      if (act==='dec') state.cart[idx].qty = Math.max(1, state.cart[idx].qty-1);
-      if (act==='del') { if (state.cart[idx].id!=='delivery') state.cart.splice(idx,1); }
-      updateCart();
-      return;
-    }
-
-    if (e.target.classList.contains('add')){
-      const card = e.target.closest('.card');
-      const pid  = e.target.getAttribute('data-id');
-      const sizeSel = card.querySelector('.size');
-      const p = state.cfg.items.find(x=>x.id===pid);
-      const opt = p.options[+sizeSel.value];
-
-      const found = state.cart.find(i=>i.id===pid && i.variant===opt.label);
-      if (found) found.qty += 1;
-      else state.cart.push({ id:pid, name:p.name, variant:opt.label, price:opt.price, qty:1, img:p.img });
-
-      updateCart();
-      els.drawer.classList.add('open');
-    }
-  });
-
-  els.open.addEventListener('click', ()=> els.drawer.classList.add('open'));
-  els.close.addEventListener('click', ()=> els.drawer.classList.remove('open'));
-  if (els.closeBtn) els.closeBtn.addEventListener('click', ()=> els.drawer.classList.remove('open'));
-
-  ['input','change','blur'].forEach(ev=>{
-    els.name.addEventListener(ev, updateCart);
-    els.phone.addEventListener(ev, updateCart);
-    els.addr.addEventListener(ev, updateCart);
-    els.district.addEventListener(ev, updateCart);
-  });
-
-  els.lineBtn.addEventListener('click', ()=>{
-    const msg = buildMessage();
-    const id  = state.cfg.lineId;
-    const url = 'https://line.me/R/oaMessage/' + encodeURIComponent(id) + '/?' +
-                encodeURIComponent(msg).replace(/%0A/g,'%0A');
-    const w = window.open(url,'_blank');
-    if (!w){
-      navigator.clipboard.writeText(msg).catch(()=>{});
-      alert('Order text copied. Paste it into LINE chat.');
-    }
-  });
-
-  els.mailBtn.addEventListener('click', ()=>{
-    const subject = encodeURIComponent("Order — 5 O'CLOCK Tea");
-    const body    = encodeURIComponent(buildMessage());
-    const mailto  = `mailto:${state.cfg.email}?subject=${subject}&body=${body}`;
-    window.location.href = mailto;
-  });
+function openLine(){
+  const { text } = buildOrderMessage();
+  const url = 'https://line.me/R/oaMessage/' + encodeURIComponent(CONFIG.lineId) + '/?' +
+              encodeURIComponent(text).replace(/%0A/g,'%0A');
+  const opened = window.open(url, '_blank');
+  if (!opened) {
+    navigator.clipboard?.writeText(text).catch(()=>{});
+    alert('Order text copied. Paste it into LINE chat.');
+    window.open('https://line.me/R/ti/p/'+encodeURIComponent(CONFIG.lineId),'_blank');
+  }
 }
 
-boot();
+// ---- Events ----
+document.addEventListener("click", e=>{
+  const act = e.target.getAttribute("data-act");
+  if (act){
+    const idx = Number(e.target.getAttribute("data-idx"));
+    if (act==="inc") state.cart[idx].qty += 1;
+    if (act==="dec") state.cart[idx].qty = Math.max(1, state.cart[idx].qty-1);
+    if (act==="del"){ if (state.cart[idx].id!=="delivery") state.cart.splice(idx,1); }
+    updateCart();
+    return;
+  }
+
+  if (e.target.classList.contains("addBtn")){
+    const card = e.target.closest(".card");
+    const sel  = card.querySelector(".sizeSel");
+    const pid  = e.target.getAttribute("data-id");
+    const prod = CONFIG.products.find(p=>p.id===pid);
+    const opt  = prod.options[Number(sel.value)];
+    const found = state.cart.find(i=>i.id===pid && i.variant===opt.label);
+    if (found) found.qty += 1;
+    else state.cart.push({ id:pid, name:prod.name, variant:opt.label, price:opt.price, qty:1, img:prod.img });
+    updateCart();
+    els.drawer.classList.add("open"); // auto-open
+  }
+});
+
+["input","change","blur"].forEach(ev=> els.name.addEventListener(ev, updateCart));
+["input","change","blur"].forEach(ev=> els.phone.addEventListener(ev, updateCart));
+["input","change","blur"].forEach(ev=> els.addr.addEventListener(ev, updateCart));
+els.district.addEventListener("change", updateCart);
+
+els.open.addEventListener("click", ()=> els.drawer.classList.add("open"));
+els.close.addEventListener("click", ()=> els.drawer.classList.remove("open"));
+els.closeBtn.addEventListener("click", ()=> els.drawer.classList.remove("open"));
+els.checkout.addEventListener("click", e=>{ e.preventDefault(); openLine(); });
+
+// ---- Init ----
+function bootDistricts(){
+  els.district.innerHTML = `<option value="">Select…</option>` +
+    BKK_DISTRICTS.map(([name,km])=>`<option value="${name}" data-km="${km}">${name} (~${km} km)</option>`).join("");
+}
+function boot(){
+  bootDistricts();
+  renderProducts();
+  updateCart();
+}
+document.addEventListener("DOMContentLoaded", boot);
