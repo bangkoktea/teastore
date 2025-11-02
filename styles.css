@@ -64,6 +64,17 @@ body{
   border: 1px solid rgba(201,178,125,.25);
   border-radius: 14px;
 }
+card .row{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+
+.card .row .size{
+  flex: 1 1 auto;
+  min-width: 0;
+}
 
 .card__body{ padding:12px 14px 14px; display:flex; flex-direction:column; gap:8px; }
 .card__title{ font-weight:600; }
