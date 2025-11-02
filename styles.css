@@ -151,130 +151,49 @@ body{
 .total{ font-weight:700; }
 .actions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
 .tiny{ color:var(--muted); font-size:.85rem; margin-top:8px; }
-/* ===== HOTFIX: низ карточек и кнопка «Add to cart» ===== */
-
-/* 1) Контейнер нижней строки карточки — в одну линию */
-.grid .card .row:last-child{
-  display:flex !important;
-  align-items:center !important;
-  gap:12px !important;
-  padding:0 12px 12px !important;
-  margin-top:auto !important;           /* прижать вниз карточки */
-}
-
-/* 2) Селект заполняет свободное место, чтобы кнопка не прыгала */
-.grid .card .row:last-child select,
-.grid .card .row:last-child .select,
-.grid .card .row:last-child .size{
-  flex:1 1 auto !important;
-  min-width:0 !important;
-}
-
-/* 3) Убить «круглую» кнопку из старых стилей и сделать пилюлю */
-.grid .card .row:last-child .btn,
-.grid .card .row:last-child .add,
-.grid .card .row:last-child .addBtn,
-.grid .card .row:last-child button{
-  all: unset;                            /* сбросить старые width/height/flex-direction */
-  box-sizing: border-box !important;
-  display:inline-flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  height:44px !important;
-  min-width:130px !important;
-  padding:0 16px !important;
-  border-radius:999px !important;
-  background:#111 !important;
-  color:#fff !important;
-  border:1px solid #111 !important;
-  font:600 14px/1 Inter,system-ui,Arial,sans-serif !important;
-  white-space:nowrap !important;         /* запрет переносов */
-  cursor:pointer !important;
-}
-
-/* 4) На всякий случай убрать наследованный «колонный» текст внутри кнопки */
-.grid .card .row:last-child .btn *{
-  display:inline !important;
-}
-
-/* 5) Картинки точно не вылезают за рамку карточки */
-.grid .card > img{
-  width:100% !important;
-  aspect-ratio:1/1 !important;
-  object-fit:contain !important;
-  padding:10px !important;
-  background:#fff !important;
-  border:1px solid rgba(201,178,125,.25) !important;
-  border-radius:14px !important;
-  box-sizing:border-box !important;
-}
-/* --- Select: не даём сжиматься, добавляем место под стрелку --- */
-.grid .card .row:last-child select,
-.grid .card .row:last-child .select,
-.grid .card .row:last-child .size{
-  flex: 1 1 200px !important;   /* базовая ширина 200px, можно менять */
-  min-width: 180px !important;  /* не сжимать меньше этого */
-  height: 44px !important;
-  line-height: 44px !important;
-  padding: 0 28px 0 14px !important;  /* справа запас под стрелку */
-  border-radius: 999px !important;
-  overflow: visible !important;       /* текст не обрезаем */
-  white-space: nowrap !important;     /* без переносов внутри */
-}
-
-/* Кнопка остаётся фиксированной и не давит селект */
-.grid .card .row:last-child .btn,
-.grid .card .row:last-child .add,
-.grid .card .row:last-child .addBtn{
-  flex: 0 0 auto !important;
-}
-/* Карточки шире, чтобы низ не ломался */
-.grid{
-  display:grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* было 240px */
-  gap:16px;
-}
-
-/* Низ карточки: одна линия без переносов */
+/* Низ карточки: селект + кнопка на одной линии, без переполнений */
 .card .row:last-child{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:0 12px 14px;
-  flex-wrap: nowrap;                 /* не переносить на новую строку */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px; /* 132px — ширина кнопки */
+  gap: 12px;
+  padding: 0 12px 14px;
+  align-items: center;
 }
 
-/* Селект занимает РОВНО столько, сколько остаётся после кнопки */
+/* селект всегда занимает всю доступную колонку, не вылезает */
 .card .row:last-child select,
 .card .row:last-child .select,
 .card .row:last-child .size{
-  flex: 1 1 auto;
-  min-width: 0;                      /* разрешаем ужиматься по сети */
-  max-width: calc(100% - 140px);     /* 140 = ширина кнопки + зазор */
-  height:44px;
-  line-height:44px;
-  padding:0 28px 0 14px;             /* справа место под стрелку */
-  border-radius:999px;
-  white-space:nowrap;
+  width: 100%;
+  min-width: 0;           /* разрешаем ужиматься */
+  height: 44px;
+  padding: 0 28px 0 14px; /* справа запас под стрелку */
+  border-radius: 999px;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 
-/* Кнопка фиксированной ширины, не прыгает */
+/* кнопка фиксированной ширины и высоты */
 .card .row:last-child .add,
 .card .row:last-child .addBtn,
 .card .row:last-child .btn.add{
-  flex: 0 0 128px;                   /* фикс-ширина */
-  height:44px;
-  white-space:nowrap;
+  width: 132px;
+  height: 44px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
-/* На очень узких экранах — чуть уменьшить кнопку */
+/* на узких экранах немного ужимаем кнопку */
 @media (max-width: 560px){
+  .card .row:last-child{
+    grid-template-columns: minmax(0,1fr) 118px;
+  }
   .card .row:last-child .add,
   .card .row:last-child .addBtn,
   .card .row:last-child .btn.add{
-    flex-basis:112px;
-  }
-  .card .row:last-child select{
-    max-width: calc(100% - 124px);
+    width: 118px;
   }
 }
