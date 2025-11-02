@@ -65,20 +65,48 @@ body{
   border:1px solid rgba(201,178,125,.25);
   border-radius:14px;
 }
+/* --- фикс верстки низа карточки --- */
 
-/* опечатка: было "card .row" — надо ".card .row" */
+/* ряд с селектом и кнопкой — всегда одна линия */
 .card .row{
   display:flex;
   align-items:center;
-  gap:10px;
+  gap:12px;
   padding:0 12px 12px;
 }
 
-/* селект тянется, кнопка фиксированной ширины — ряд не «ломается» */
+/* селект растягивается, чтобы кнопка не прыгала */
 .card .row .size,
-.card .row .select{ flex:1 1 auto; min-width:0; }
+.card .row .select{
+  flex:1 1 auto;
+  min-width:0;
+}
 
-.card .row .btn{ min-width:96px; height:42px; border-radius:999px; }
+/* кнопка фикс. высоты/ширины, без переносов */
+.add, .addBtn, .btn.add {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  height:44px;             /* одинаковая высота */
+  min-width:120px;         /* места хватает на "Add to cart" */
+  padding:0 16px;
+  border-radius:999px;
+  white-space:nowrap;      /* запрет переносов */
+  line-height:1;           /* чтобы текст не «дышал» по вертикали */
+  font-weight:600;
+}
+
+/* если где-то кругляш делали очень маленьким — отключаем */
+.add.circle, .addBtn.circle { min-width:120px; height:44px; border-radius:999px; }
+
+/* кнопка темная — как у тебя */
+.add, .addBtn, .btn.add { background:#111; color:#fff; border:1px solid #111; }
+
+/* бонус: «подвал» карточки прижат к низу, чтобы все кнопки были в одной высоте,
+   даже если описания разной длины */
+.card{ display:flex; flex-direction:column; }
+.card__body{ flex:1 1 auto; display:flex; flex-direction:column; }
+.card .row:last-child{ margin-top:auto; }  /* нижний row уходит к низу карточки */
 
 .card__body{ padding:12px 14px 14px; display:flex; flex-direction:column; gap:8px; }
 .card__title{ font-weight:600; }
