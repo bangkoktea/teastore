@@ -36,6 +36,9 @@ body{
   letter-spacing:.3px;
   font-weight:600;
 }
+.topbar{ padding:10px 24px; }
+.brand{ gap:16px; }
+
 .cart-btn{
   background:#111; color:#fff; border:0; border-radius:999px;
   padding:.7rem 1rem; font-weight:600; cursor:pointer;
