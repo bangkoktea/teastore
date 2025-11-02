@@ -197,3 +197,46 @@ body{
     width: 118px;
   }
 }
+/* НИЗ КАРТОЧКИ: любая .row, которая содержит селект, становится гридом */
+.card .row:has(select){
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) 132px; /* кнопка справа фиксированной ширины */
+  gap: 12px;
+  align-items: center;
+  padding: 0 12px 14px;
+}
+
+/* Селект — во всю ширину левой колонки, не схлопывается */
+.card .row:has(select) select,
+.card .row:has(select) .size,
+.card .row:has(select) .select{
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 28px 0 14px;           /* запас под стрелку */
+  border-radius: 999px;
+  box-sizing: border-box;
+  appearance: none;                 /* чтобы стрелка не «ломала» размер */
+}
+
+/* Кнопка — стабильная */
+.card .row:has(select) .add,
+.card .row:has(select) .addBtn,
+.card .row:has(select) .btn.add{
+  width: 132px;
+  height: 44px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+/* На узких экранах чуть уже */
+@media (max-width: 560px){
+  .card .row:has(select){ grid-template-columns: minmax(0,1fr) 118px; }
+  .card .row:has(select) .add,
+  .card .row:has(select) .addBtn,
+  .card .row:has(select) .btn.add{ width: 118px; }
+}
