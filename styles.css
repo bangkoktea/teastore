@@ -228,3 +228,53 @@ body{
 .grid .card .row:last-child .addBtn{
   flex: 0 0 auto !important;
 }
+/* Карточки шире, чтобы низ не ломался */
+.grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* было 240px */
+  gap:16px;
+}
+
+/* Низ карточки: одна линия без переносов */
+.card .row:last-child{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:0 12px 14px;
+  flex-wrap: nowrap;                 /* не переносить на новую строку */
+}
+
+/* Селект занимает РОВНО столько, сколько остаётся после кнопки */
+.card .row:last-child select,
+.card .row:last-child .select,
+.card .row:last-child .size{
+  flex: 1 1 auto;
+  min-width: 0;                      /* разрешаем ужиматься по сети */
+  max-width: calc(100% - 140px);     /* 140 = ширина кнопки + зазор */
+  height:44px;
+  line-height:44px;
+  padding:0 28px 0 14px;             /* справа место под стрелку */
+  border-radius:999px;
+  white-space:nowrap;
+}
+
+/* Кнопка фиксированной ширины, не прыгает */
+.card .row:last-child .add,
+.card .row:last-child .addBtn,
+.card .row:last-child .btn.add{
+  flex: 0 0 128px;                   /* фикс-ширина */
+  height:44px;
+  white-space:nowrap;
+}
+
+/* На очень узких экранах — чуть уменьшить кнопку */
+@media (max-width: 560px){
+  .card .row:last-child .add,
+  .card .row:last-child .addBtn,
+  .card .row:last-child .btn.add{
+    flex-basis:112px;
+  }
+  .card .row:last-child select{
+    max-width: calc(100% - 124px);
+  }
+}
