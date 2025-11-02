@@ -23,10 +23,19 @@ body{
   gap:16px;
 }
 
-.brand{ display:flex; align-items:center; gap:12px; }
-.logo{ width:40px; height:40px; object-fit:contain; filter:drop-shadow(0 1px 0 rgba(0,0,0,.1)); }
-.brand-name{ font-family:"Playfair Display",serif; font-size:22px; letter-spacing:.2px; }
+.logo{
+  width:64px;                /* было 40px */
+  height:auto;               /* чтобы не сжимался вертикально */
+  object-fit:contain;
+  filter:drop-shadow(0 1px 0 rgba(0,0,0,.1));
+}
 
+.brand-name{
+  font-family:"Playfair Display",serif;
+  font-size:28px;            /* чуть крупнее */
+  letter-spacing:.3px;
+  font-weight:600;
+}
 .cart-btn{
   background:#111; color:#fff; border:0; border-radius:999px;
   padding:.7rem 1rem; font-weight:600; cursor:pointer;
