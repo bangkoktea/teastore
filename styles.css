@@ -53,28 +53,32 @@ body{
   transition:transform .15s ease;
 }
 .card:hover{ transform:translateY(-2px); }
+/* картинки в карточке: вписываем в квадрат, не вылезают за рамки */
 .card img{
-  width: 100%;
-  height: auto;
-  aspect-ratio: 1 / 1;        
-  object-fit: contain;        
-  display: block;
-  background: #fff;            
-  padding: 10px;
-  border: 1px solid rgba(201,178,125,.25);
-  border-radius: 14px;
-}
-card .row{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 12px 12px;
+  display:block;
+  width:100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  padding:10px;
+  box-sizing: border-box;        /* ← ключевое, чтобы 100% включало padding */
+  background:#fff;
+  border:1px solid rgba(201,178,125,.25);
+  border-radius:14px;
 }
 
-.card .row .size{
-  flex: 1 1 auto;
-  min-width: 0;
+/* опечатка: было "card .row" — надо ".card .row" */
+.card .row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 12px 12px;
 }
+
+/* селект тянется, кнопка фиксированной ширины — ряд не «ломается» */
+.card .row .size,
+.card .row .select{ flex:1 1 auto; min-width:0; }
+
+.card .row .btn{ min-width:96px; height:42px; border-radius:999px; }
 
 .card__body{ padding:12px 14px 14px; display:flex; flex-direction:column; gap:8px; }
 .card__title{ font-weight:600; }
