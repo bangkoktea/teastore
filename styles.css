@@ -24,7 +24,7 @@ body{
 }
 
 .logo{
-  width:64px;                /* было 40px */
+  width:180px;                /* было 40px */
   height:auto;               /* чтобы не сжимался вертикально */
   object-fit:contain;
   filter:drop-shadow(0 1px 0 rgba(0,0,0,.1));
