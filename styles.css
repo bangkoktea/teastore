@@ -151,3 +151,61 @@ body{
 .total{ font-weight:700; }
 .actions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
 .tiny{ color:var(--muted); font-size:.85rem; margin-top:8px; }
+/* ===== HOTFIX: низ карточек и кнопка «Add to cart» ===== */
+
+/* 1) Контейнер нижней строки карточки — в одну линию */
+.grid .card .row:last-child{
+  display:flex !important;
+  align-items:center !important;
+  gap:12px !important;
+  padding:0 12px 12px !important;
+  margin-top:auto !important;           /* прижать вниз карточки */
+}
+
+/* 2) Селект заполняет свободное место, чтобы кнопка не прыгала */
+.grid .card .row:last-child select,
+.grid .card .row:last-child .select,
+.grid .card .row:last-child .size{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+}
+
+/* 3) Убить «круглую» кнопку из старых стилей и сделать пилюлю */
+.grid .card .row:last-child .btn,
+.grid .card .row:last-child .add,
+.grid .card .row:last-child .addBtn,
+.grid .card .row:last-child button{
+  all: unset;                            /* сбросить старые width/height/flex-direction */
+  box-sizing: border-box !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  height:44px !important;
+  min-width:130px !important;
+  padding:0 16px !important;
+  border-radius:999px !important;
+  background:#111 !important;
+  color:#fff !important;
+  border:1px solid #111 !important;
+  font:600 14px/1 Inter,system-ui,Arial,sans-serif !important;
+  white-space:nowrap !important;         /* запрет переносов */
+  cursor:pointer !important;
+}
+
+/* 4) На всякий случай убрать наследованный «колонный» текст внутри кнопки */
+.grid .card .row:last-child .btn *{
+  display:inline !important;
+}
+
+/* 5) Картинки точно не вылезают за рамку карточки */
+.grid .card > img{
+  width:100% !important;
+  aspect-ratio:1/1 !important;
+  object-fit:contain !important;
+  padding:10px !important;
+  background:#fff !important;
+  border:1px solid rgba(201,178,125,.25) !important;
+  border-radius:14px !important;
+  box-sizing:border-box !important;
+}
+
