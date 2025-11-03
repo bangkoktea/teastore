@@ -5,18 +5,17 @@ const CONFIG = {
   freeShippingThreshold: 500,
   pickup: { lat: 13.6948, lng: 100.7186 }, // Ramkhamhaeng 2 (your base)
   products: [
-    { id:"wild-cherry",        name:"Wild Cherry",                img:"./images/wild-cherry.jpg",        options:[{label:"50 g", price:195}], desc:"Black tea with cherry notes — bright and aromatic." },
-    { id:"taiga-blend",        name:"Taiga Blend",                img:"./images/taiga-blend.jpg",        options:[{label:"50 g", price:195}], desc:"Black tea, berries & forest vibes. Cozy and bold." },
-    { id:"strawberries-cream", name:"Strawberry & Cream",         img:"./images/strawberries-cream.jpg", options:[{label:"50 g", price:195}], desc:"Black tea with strawberry pieces, goji berries & candied pineapple." },
-    { id:"rose-strawberry",    name:"Rose Strawberry Fruit Tea",  img:"./images/rose-strawberry.jpg",    options:[{label:"50 g", price:195}], desc:"Black tea with apples, chokeberry, strawberry & rose petals." },
-    { id:"citrus-orange",      name:"Citrus Orange Fruit Tea",    img:"./images/citrus-orange.jpg",      options:[{label:"50 g", price:195}], desc:"Sun-dried oranges, apples & hibiscus for a refreshing citrus aroma." },
-    { id:"rose-hibiscus",      name:"Rose Hibiscus Fruit Tea",    img:"./images/rose-hibiscus.jpg",      options:[{label:"50 g", price:195}], desc:"Hibiscus, rose petals & berries. Ruby-red infusion." },
-    { id:"tea-sampler",        name:"Tea Sampler (3×20g) Set",    img:"./images/tea-sample.jpg",         options:[{label:"Set",   price:195}], desc:"Taiga + Strawberries & Cream + Wild Cherry (3×20g). Perfect to try." }
+    { id:"wild-cherry",        name:"Wild Cherry",               img:"./images/wild-cherry.jpg",        options:[{label:"50 g", price:195}], desc:"Black tea with cherry notes — bright and aromatic." },
+    { id:"taiga-blend",        name:"Taiga Blend",               img:"./images/taiga-blend.jpg",        options:[{label:"50 g", price:195}], desc:"Black tea, berries & forest vibes. Cozy and bold." },
+    { id:"strawberries-cream", name:"Strawberry & Cream",        img:"./images/strawberries-cream.jpg", options:[{label:"50 g", price:195}], desc:"Black tea with strawberry pieces, goji berries & candied pineapple." },
+    { id:"rose-strawberry",    name:"Rose Strawberry Fruit Tea", img:"./images/rose-strawberry.jpg",    options:[{label:"50 g", price:195}], desc:"Black tea with apples, chokeberry, strawberry & rose petals." },
+    { id:"citrus-orange",      name:"Citrus Orange Fruit Tea",   img:"./images/citrus-orange.jpg",      options:[{label:"50 g", price:195}], desc:"Sun-dried oranges, apples & hibiscus for a refreshing citrus aroma." },
+    { id:"rose-hibiscus",      name:"Rose Hibiscus Fruit Tea",   img:"./images/rose-hibiscus.jpg",      options:[{label:"50 g", price:195}], desc:"Hibiscus, rose petals & berries. Ruby-red infusion." },
+    { id:"tea-sampler",        name:"Tea Sampler (3×20g) Set",   img:"./images/tea-sample.jpg",         options:[{label:"Set",   price:195}], desc:"Taiga + Strawberries & Cream + Wild Cherry (3×20g). Perfect to try." }
   ]
 };
 
 // Bangkok districts (50) with rough distance buckets from Ramkhamhaeng 2
-// km used only for pricing; tweak numbers if нужно.
 const BKK_DISTRICTS = [
   ["Bang Kapi",8],["Hua Mak",5],["Saphan Sung",8],["Watthana",12],["Suan Luang",8],
   ["Lat Krabang",15],["Prawet",12],["Phra Khanong",12],["Bang Na",21],["Khlong Toei",14],
@@ -45,7 +44,7 @@ const els = {
   shipping:  document.getElementById("shippingCost"),
   total:     document.getElementById("cartTotal"),
   checkout:  document.getElementById("checkoutBtn"),
-  emailBtn:  document.getElementById("emailBtn"),
+  emailBtn:  document.getElementById("emailBtn"),  // может отсутствовать — проверяем дальше
   addr:      document.getElementById("address"),
   name:      document.getElementById("custName"),
   phone:     document.getElementById("custPhone"),
@@ -61,6 +60,7 @@ function calcShippingByKm(km, subtotal){
   return Math.max(DELIVERY.min, Math.round(DELIVERY.base + DELIVERY.perKm * k));
 }
 function currentDistrictKm(){
+  if (!els.district) return 0;
   const opt = els.district.options[els.district.selectedIndex];
   return opt ? Number(opt.dataset.km || 0) : 0;
 }
@@ -79,7 +79,7 @@ function renderProducts(){
           <select class="select sizeSel">
             ${p.options.map((o,i)=>`<option value="${i}">${o.label} — ${fmt(o.price)}</option>`).join("")}
           </select>
-          <button class="btn primary addBtn" data-id="${p.id}">Add to cart</button>
+          <button class="btn primary addBtn" data-id="${p.id}" type="button">Add to cart</button>
         </div>
       </div>
     `;
@@ -105,9 +105,9 @@ function updateCart(){
       </div>
       ${item.id==="delivery" ? "" : `
       <div class="qty">
-        <button class="qbtn" data-act="dec" data-idx="${idx}">−</button>
-        <button class="qbtn" data-act="inc" data-idx="${idx}">+</button>
-        <button class="qbtn" data-act="del" data-idx="${idx}">✕</button>
+        <button class="qbtn" data-act="dec" data-idx="${idx}" type="button">−</button>
+        <button class="qbtn" data-act="inc" data-idx="${idx}" type="button">+</button>
+        <button class="qbtn" data-act="del" data-idx="${idx}" type="button">✕</button>
       </div>`}
     `;
     els.items.appendChild(row);
@@ -134,9 +134,12 @@ function updateCart(){
   els.count.textContent = itemsCount;
 
   els.checkout.disabled = !(itemsCount>0 && els.name.value.trim() && els.phone.value.trim() && els.addr.value.trim());
-  // update email link
+
+  // update email link (если на странице есть #emailBtn)
   const m = buildOrderMessage();
-  els.emailBtn.href = `mailto:5oclock@gmail.com?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.text)}`;
+  if (els.emailBtn) {
+    els.emailBtn.href = `mailto:5oclock@gmail.com?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.text)}`;
+  }
 }
 
 function buildOrderMessage(){
@@ -149,43 +152,15 @@ function buildOrderMessage(){
   const total    = state.cart.reduce((s,i)=>s+i.price*i.qty,0);
   const delivery = state.cart.find(i=>i.id==="delivery")?.price || 0;
 
-  const text =
-`Order from 5 o'clock Tea
+  const text = `Order from 5 o'clock Tea
 ${lines}
 
 Subtotal: THB ${subtotal}
 ${delivery>0?`Delivery: THB ${delivery}\n`:''}Total: THB ${total}
 
-District: ${els.district.value || '-'}
+District: ${els.district?.value || '-'}
 Name: ${els.name.value.trim()}
 Phone: ${els.phone.value.trim()}
-// ---- PHONE NORMALIZER (+66, без ведущего 0) ----
-function normalizeThaiPhone() {
-  if (!els.phone) return;
-  // только цифры и плюс
-  let v = els.phone.value.replace(/\s+/g, '');
-
-  // удалить ведущий 0 (если ввели местный формат 0xxxxxxxxx)
-  if (v.startsWith('0')) v = v.slice(1);
-
-  // гарантировать префикс +66
-  if (!v.startsWith('+66')) {
-    v = v.replace(/^\+*/, '');      // убрать лишние плюсы
-    if (v.startsWith('66')) v = '+' + v;
-    else v = '+66' + v;
-  }
-
-  // ограничить длину до +66XXXXXXXXX (≈ 13 символов)
-  if (v.length > 13) v = v.slice(0, 13);
-
-  els.phone.value = v;
-}
-if (els.phone) {
-  // сразу проставим +66, если поле пустое
-  if (!els.phone.value.trim()) els.phone.value = '+66';
-  els.phone.addEventListener('input', normalizeThaiPhone);
-  els.phone.addEventListener('blur', normalizeThaiPhone);
-}
 Address: ${els.addr.value.trim()}`;
 
   return { text, subject:`Order — 5 o'clock Tea (THB ${total})` };
@@ -203,6 +178,21 @@ function openLine(){
   }
 }
 
+// ---- Phone normalizer (+66, drop leading 0) ----
+function normalizeThaiPhone() {
+  if (!els.phone) return;
+  let v = (els.phone.value || '').replace(/\s+/g, '');
+
+  if (v.startsWith('0')) v = v.slice(1);
+  if (!v.startsWith('+66')) {
+    v = v.replace(/^\+*/, '');
+    if (v.startsWith('66')) v = '+' + v;
+    else v = '+66' + v;
+  }
+  if (v.length > 13) v = v.slice(0, 13);
+  els.phone.value = v;
+}
+
 // ---- Events ----
 document.addEventListener("click", e=>{
   const act = e.target.getAttribute("data-act");
@@ -215,10 +205,12 @@ document.addEventListener("click", e=>{
     return;
   }
 
-  if (e.target.classList.contains("addBtn")){
-    const card = e.target.closest(".card");
+  // поддержим клик по вложенным элементам внутри кнопки
+  const addBtn = e.target.closest && e.target.closest(".addBtn");
+  if (addBtn){
+    const card = addBtn.closest(".card");
     const sel  = card.querySelector(".sizeSel");
-    const pid  = e.target.getAttribute("data-id");
+    const pid  = addBtn.getAttribute("data-id");
     const prod = CONFIG.products.find(p=>p.id===pid);
     const opt  = prod.options[Number(sel.value)];
     const found = state.cart.find(i=>i.id===pid && i.variant===opt.label);
@@ -230,7 +222,7 @@ document.addEventListener("click", e=>{
 });
 
 ["input","change","blur"].forEach(ev=> els.name.addEventListener(ev, updateCart));
-["input","change","blur"].forEach(ev=> els.phone.addEventListener(ev, updateCart));
+["input","change","blur"].forEach(ev=> els.phone.addEventListener(ev, ()=>{ normalizeThaiPhone(); updateCart(); }));
 ["input","change","blur"].forEach(ev=> els.addr.addEventListener(ev, updateCart));
 els.district.addEventListener("change", updateCart);
 
@@ -241,12 +233,15 @@ els.checkout.addEventListener("click", e=>{ e.preventDefault(); openLine(); });
 
 // ---- Init ----
 function bootDistricts(){
+  if (!els.district) return;
   els.district.innerHTML = `<option value="">Select…</option>` +
     BKK_DISTRICTS.map(([name,km])=>`<option value="${name}" data-km="${km}">${name} (~${km} km)</option>`).join("");
 }
 function boot(){
   bootDistricts();
   renderProducts();
+  if (els.phone && !els.phone.value.trim()) els.phone.value = '+66';
+  normalizeThaiPhone();
   updateCart();
 }
 document.addEventListener("DOMContentLoaded", boot);
