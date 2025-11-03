@@ -159,25 +159,33 @@ ${delivery>0?`Delivery: THB ${delivery}\n`:''}Total: THB ${total}
 District: ${els.district.value || '-'}
 Name: ${els.name.value.trim()}
 Phone: ${els.phone.value.trim()}
-// ---- PHONE NORMALIZER ----
-els.phone.addEventListener('input', () => {
+// ---- PHONE NORMALIZER (+66, без ведущего 0) ----
+function normalizeThaiPhone() {
+  if (!els.phone) return;
+  // только цифры и плюс
   let v = els.phone.value.replace(/\s+/g, '');
 
-  // если пользователь начинает с "0", удаляем его
-  if (v.startsWith('0')) v = v.substring(1);
+  // удалить ведущий 0 (если ввели местный формат 0xxxxxxxxx)
+  if (v.startsWith('0')) v = v.slice(1);
 
-  // если нет "+66" — добавляем
+  // гарантировать префикс +66
   if (!v.startsWith('+66')) {
-    v = v.replace(/^\+*/, ''); // убираем лишние "+"
+    v = v.replace(/^\+*/, '');      // убрать лишние плюсы
     if (v.startsWith('66')) v = '+' + v;
     else v = '+66' + v;
   }
 
-  // ограничим длину до 12–13 символов (например +66812345678)
-  if (v.length > 13) v = v.substring(0, 13);
+  // ограничить длину до +66XXXXXXXXX (≈ 13 символов)
+  if (v.length > 13) v = v.slice(0, 13);
 
   els.phone.value = v;
-});
+}
+if (els.phone) {
+  // сразу проставим +66, если поле пустое
+  if (!els.phone.value.trim()) els.phone.value = '+66';
+  els.phone.addEventListener('input', normalizeThaiPhone);
+  els.phone.addEventListener('blur', normalizeThaiPhone);
+}
 Address: ${els.addr.value.trim()}`;
 
   return { text, subject:`Order — 5 o'clock Tea (THB ${total})` };
