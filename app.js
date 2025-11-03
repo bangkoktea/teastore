@@ -159,6 +159,25 @@ ${delivery>0?`Delivery: THB ${delivery}\n`:''}Total: THB ${total}
 District: ${els.district.value || '-'}
 Name: ${els.name.value.trim()}
 Phone: ${els.phone.value.trim()}
+// ---- PHONE NORMALIZER ----
+els.phone.addEventListener('input', () => {
+  let v = els.phone.value.replace(/\s+/g, '');
+
+  // если пользователь начинает с "0", удаляем его
+  if (v.startsWith('0')) v = v.substring(1);
+
+  // если нет "+66" — добавляем
+  if (!v.startsWith('+66')) {
+    v = v.replace(/^\+*/, ''); // убираем лишние "+"
+    if (v.startsWith('66')) v = '+' + v;
+    else v = '+66' + v;
+  }
+
+  // ограничим длину до 12–13 символов (например +66812345678)
+  if (v.length > 13) v = v.substring(0, 13);
+
+  els.phone.value = v;
+});
 Address: ${els.addr.value.trim()}`;
 
   return { text, subject:`Order — 5 o'clock Tea (THB ${total})` };
